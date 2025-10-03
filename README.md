@@ -2,28 +2,28 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
-Intégration HACS pour monitorer et contrôler votre NerdQAxe+ Bitcoin Miner dans Home Assistant.
+HACS integration to monitor and control your NerdQAxe+ Bitcoin Miner in Home Assistant.
 
 ## Description
 
-Cette custom integration permet d'intégrer votre miner NerdQAxe+ dans Home Assistant. Elle crée automatiquement des sensors pour suivre les performances, la température, la consommation électrique et bien plus.
+This custom integration allows you to integrate your NerdQAxe+ miner into Home Assistant. It automatically creates sensors to monitor performance, temperature, power consumption, and more.
 
-**Type d'intégration :** Custom Component HACS (pas un addon Docker)
+**Integration type:** Custom Component HACS (not a Docker addon)
 
-## Architecture du projet
+## Project Architecture
 
-### API REST du NerdQAxe+
+### NerdQAxe+ REST API
 
-Le firmware NerdQAxe+ expose déjà une API REST complète (pas besoin de modifications firmware) :
+The NerdQAxe+ firmware already exposes a complete REST API (no firmware modifications needed):
 
-**Endpoints disponibles :**
-- `GET /api/system/info` - Informations système complètes
-- `GET /api/system/asic` - Informations ASIC
-- `GET /api/swarm/info` - Informations Swarm
-- `PATCH /api/system` - Modifier la configuration
-- `POST /api/system/restart` - Redémarrer le miner
+**Available endpoints:**
+- `GET /api/system/info` - Complete system information
+- `GET /api/system/asic` - ASIC information
+- `GET /api/swarm/info` - Swarm information
+- `PATCH /api/system` - Modify configuration
+- `POST /api/system/restart` - Restart the miner
 
-**Données retournées par `/api/system/info` :**
+**Data returned by `/api/system/info`:**
 ```json
 {
   "hashRate": 1200.5,
@@ -40,109 +40,112 @@ Le firmware NerdQAxe+ expose déjà une API REST complète (pas besoin de modifi
   "sharesRejected": 5,
   "isStratumConnected": true,
   "deviceModel": "NerdQAxePlus",
-  "hostname": "nerdqaxe-123"
+  "hostname": "nerdqaxe-123",
+  "version": "2.0.3"
 }
 ```
 
-### Structure de l'intégration
+### Integration Structure
 
 ```
 custom_components/nerdqaxe/
-├── __init__.py          # Initialisation et coordinateur
-├── manifest.json        # Métadonnées de l'intégration
-├── const.py             # Constantes
-├── config_flow.py       # Configuration via UI
+├── __init__.py          # Initialization and coordinator
+├── manifest.json        # Integration metadata
+├── const.py             # Constants
+├── config_flow.py       # UI configuration
 ├── sensor.py            # Sensors (hashrate, temp, power, etc.)
-└── binary_sensor.py     # Binary sensors (stratum connected)
+├── binary_sensor.py     # Binary sensors (stratum connected)
+├── button.py            # Restart button
+└── update.py            # Firmware update entity
 ```
 
-## Sensors créés
+## Created Sensors
 
-L'intégration crée automatiquement les sensors suivants :
+The integration automatically creates the following sensors:
 
 ### Hashrate
-- `sensor.nerdqaxe_hashrate` - Hashrate actuel (GH/s)
-- `sensor.nerdqaxe_hashrate_1m` - Hashrate moyenne 1 minute (GH/s)
-- `sensor.nerdqaxe_hashrate_10m` - Hashrate moyenne 10 minutes (GH/s)
-- `sensor.nerdqaxe_hashrate_1h` - Hashrate moyenne 1 heure (GH/s)
-- `sensor.nerdqaxe_hashrate_1d` - Hashrate moyenne 1 jour (GH/s)
+- `sensor.nerdqaxe_hashrate` - Current hashrate (GH/s)
+- `sensor.nerdqaxe_hashrate_1m` - 1-minute average hashrate (GH/s)
+- `sensor.nerdqaxe_hashrate_10m` - 10-minute average hashrate (GH/s)
+- `sensor.nerdqaxe_hashrate_1h` - 1-hour average hashrate (GH/s)
+- `sensor.nerdqaxe_hashrate_1d` - 1-day average hashrate (GH/s)
 
-### Température
-- `sensor.nerdqaxe_temperature` - Température du chip (°C)
-- `sensor.nerdqaxe_vr_temperature` - Température du régulateur de tension (°C)
+### Temperature
+- `sensor.nerdqaxe_temperature` - Chip temperature (°C)
+- `sensor.nerdqaxe_vr_temperature` - Voltage regulator temperature (°C)
 
-### Puissance
-- `sensor.nerdqaxe_power` - Consommation électrique (W)
-- `sensor.nerdqaxe_voltage` - Tension (V)
-- `sensor.nerdqaxe_current` - Courant (A)
-- `sensor.nerdqaxe_core_voltage` - Voltage du core (mV)
+### Power
+- `sensor.nerdqaxe_power` - Power consumption (W)
+- `sensor.nerdqaxe_voltage` - Voltage (V)
+- `sensor.nerdqaxe_current` - Current (A)
+- `sensor.nerdqaxe_core_voltage` - Core voltage (mV)
 
-### Ventilation
-- `sensor.nerdqaxe_fan_speed` - Vitesse du ventilateur (%)
-- `sensor.nerdqaxe_fan_rpm` - Tours par minute du ventilateur (RPM)
+### Cooling
+- `sensor.nerdqaxe_fan_speed` - Fan speed (%)
+- `sensor.nerdqaxe_fan_rpm` - Fan RPM
 
 ### Mining
-- `sensor.nerdqaxe_shares_accepted` - Shares acceptés
-- `sensor.nerdqaxe_shares_rejected` - Shares rejetés
-- `sensor.nerdqaxe_best_difficulty` - Meilleure difficulté trouvée
-- `sensor.nerdqaxe_best_session_difficulty` - Meilleure difficulté de la session
-- `sensor.nerdqaxe_found_blocks` - Blocs trouvés (session actuelle)
-- `sensor.nerdqaxe_total_found_blocks` - Total des blocs trouvés
-- `binary_sensor.nerdqaxe_stratum_connected` - État de connexion au pool
+- `sensor.nerdqaxe_shares_accepted` - Accepted shares
+- `sensor.nerdqaxe_shares_rejected` - Rejected shares
+- `sensor.nerdqaxe_best_difficulty` - Best difficulty found
+- `sensor.nerdqaxe_best_session_difficulty` - Best session difficulty
+- `sensor.nerdqaxe_found_blocks` - Blocks found (current session)
+- `sensor.nerdqaxe_total_found_blocks` - Total blocks found
+- `binary_sensor.nerdqaxe_stratum_connected` - Pool connection status
 
-### Informations
-- `sensor.nerdqaxe_device_model` - Modèle du device
-- `sensor.nerdqaxe_hostname` - Nom d'hôte du miner
-- `sensor.nerdqaxe_wifi_rssi` - Puissance du signal WiFi (dBm)
-- `sensor.nerdqaxe_frequency` - Fréquence ASIC (MHz)
-- `sensor.nerdqaxe_version` - Version du firmware
+### Information
+- `sensor.nerdqaxe_device_model` - Device model
+- `sensor.nerdqaxe_hostname` - Miner hostname
+- `sensor.nerdqaxe_wifi_rssi` - WiFi signal strength (dBm)
+- `sensor.nerdqaxe_frequency` - ASIC frequency (MHz)
+- `sensor.nerdqaxe_version` - Firmware version
 
-### Contrôle et Mise à jour
-- `button.nerdqaxe_restart` - Bouton pour redémarrer le miner
-- `update.nerdqaxe_firmware_update` - Entité de mise à jour firmware (vérifie automatiquement les nouvelles versions sur GitHub)
+### Control and Updates
+- `button.nerdqaxe_restart` - Button to restart the miner
+- `update.nerdqaxe_firmware_update` - Firmware update entity (automatically checks for new versions on GitHub)
 
 ## Installation
 
-### Méthode 1 : Via HACS (recommandée)
+### Method 1: Via HACS (recommended)
 
-1. Ouvrir HACS dans Home Assistant
-2. Aller dans "Integrations"
-3. Cliquer sur les 3 points en haut à droite → "Custom repositories"
-4. Ajouter l'URL : `https://github.com/VOTRE_USERNAME/homeassistant-nerdqaxe`
-5. Catégorie : "Integration"
-6. Cliquer sur "Add"
-7. Rechercher "NerdQAxe+" et installer
-8. Redémarrer Home Assistant
+1. Open HACS in Home Assistant
+2. Go to "Integrations"
+3. Click the 3 dots in the top right → "Custom repositories"
+4. Add URL: `https://github.com/foXaCe/homeassistant-nerdqaxe-addon`
+5. Category: "Integration"
+6. Click "Add"
+7. Search for "NerdQAxe+" and install
+8. Restart Home Assistant
 
-### Méthode 2 : Installation manuelle
+### Method 2: Manual Installation
 
-1. Télécharger le dossier `custom_components/nerdqaxe`
-2. Copier dans `<config>/custom_components/nerdqaxe`
-3. Redémarrer Home Assistant
+1. Download the `custom_components/nerdqaxe` folder
+2. Copy to `<config>/custom_components/nerdqaxe`
+3. Restart Home Assistant
 
 ## Configuration
 
-### Via l'interface utilisateur
+### Via User Interface
 
-1. Aller dans **Paramètres** → **Appareils et services**
-2. Cliquer sur **+ Ajouter une intégration**
-3. Rechercher "NerdQAxe+"
-4. Entrer l'adresse IP de votre miner (ex: `192.168.1.100`)
-5. L'intégration va se connecter et créer automatiquement tous les sensors
+1. Go to **Settings** → **Devices & Services**
+2. Click **+ Add Integration**
+3. Search for "NerdQAxe+"
+4. Enter your miner's IP address (e.g., `192.168.1.100`)
+5. The integration will connect and automatically create all sensors
 
 ### Options
 
-Après l'installation, vous pouvez configurer :
-- **Scan interval** : Intervalle de mise à jour en secondes (5-300, défaut: 30)
+After installation, you can configure:
+- **Scan interval**: Update interval in seconds (5-300, default: 30)
 
-Pour modifier les options :
-1. Aller dans **Paramètres** → **Appareils et services**
-2. Trouver "NerdQAxe+ Miner"
-3. Cliquer sur **Options**
+To modify options:
+1. Go to **Settings** → **Devices & Services**
+2. Find "NerdQAxe+ Miner"
+3. Click **Options**
 
-## Utilisation
+## Usage
 
-### Exemple de carte Lovelace
+### Example Lovelace Card
 
 ```yaml
 type: entities
@@ -153,16 +156,16 @@ entities:
   - entity: sensor.nerdqaxe_hashrate_1h
     name: Hashrate 1h
   - entity: sensor.nerdqaxe_temperature
-    name: Température
+    name: Temperature
   - entity: sensor.nerdqaxe_power
-    name: Consommation
+    name: Power
   - entity: sensor.nerdqaxe_shares_accepted
-    name: Shares acceptés
+    name: Accepted Shares
   - entity: binary_sensor.nerdqaxe_stratum_connected
-    name: Pool connecté
+    name: Pool Connected
 ```
 
-### Carte avec graphique
+### Card with Graph
 
 ```yaml
 type: vertical-stack
@@ -183,17 +186,17 @@ cards:
       - entity: sensor.nerdqaxe_hashrate_1h
 
   - type: history-graph
-    title: Température
+    title: Temperature
     hours_to_show: 24
     entities:
       - entity: sensor.nerdqaxe_temperature
 ```
 
-### Exemple d'automatisation - Alerte température
+### Automation Example - High Temperature Alert
 
 ```yaml
 automation:
-  - alias: "Alerte température miner élevée"
+  - alias: "High Miner Temperature Alert"
     trigger:
       - platform: numeric_state
         entity_id: sensor.nerdqaxe_temperature
@@ -201,15 +204,15 @@ automation:
     action:
       - service: notify.mobile_app
         data:
-          message: "⚠️ Température miner élevée : {{ states('sensor.nerdqaxe_temperature') }}°C"
+          message: "⚠️ High miner temperature: {{ states('sensor.nerdqaxe_temperature') }}°C"
           title: "NerdQAxe+ Alert"
 ```
 
-### Exemple d'automatisation - Pool déconnecté
+### Automation Example - Pool Disconnected
 
 ```yaml
 automation:
-  - alias: "Alerte pool déconnecté"
+  - alias: "Pool Disconnected Alert"
     trigger:
       - platform: state
         entity_id: binary_sensor.nerdqaxe_stratum_connected
@@ -218,14 +221,14 @@ automation:
     action:
       - service: notify.mobile_app
         data:
-          message: "⚠️ Le miner NerdQAxe+ est déconnecté du pool depuis 5 minutes"
+          message: "⚠️ NerdQAxe+ miner disconnected from pool for 5 minutes"
 ```
 
-### Exemple d'automatisation - Hashrate faible
+### Automation Example - Low Hashrate
 
 ```yaml
 automation:
-  - alias: "Alerte hashrate faible"
+  - alias: "Low Hashrate Alert"
     trigger:
       - platform: numeric_state
         entity_id: sensor.nerdqaxe_hashrate_1h
@@ -234,25 +237,25 @@ automation:
     action:
       - service: notify.mobile_app
         data:
-          message: "⚠️ Hashrate faible : {{ states('sensor.nerdqaxe_hashrate_1h') }} GH/s"
+          message: "⚠️ Low hashrate: {{ states('sensor.nerdqaxe_hashrate_1h') }} GH/s"
 ```
 
-### Redémarrage du miner
+### Miner Restart
 
-Le bouton de redémarrage est disponible dans l'interface :
+The restart button is available in the interface:
 
 ```yaml
 type: button
 entity: button.nerdqaxe_restart
-name: Redémarrer le miner
+name: Restart Miner
 icon: mdi:restart
 ```
 
-Ou dans une automatisation :
+Or in an automation:
 
 ```yaml
 automation:
-  - alias: "Redémarrage automatique si pool déconnecté"
+  - alias: "Auto Restart if Pool Disconnected"
     trigger:
       - platform: state
         entity_id: binary_sensor.nerdqaxe_stratum_connected
@@ -264,14 +267,14 @@ automation:
           entity_id: button.nerdqaxe_restart
       - service: notify.mobile_app
         data:
-          message: "🔄 Redémarrage du miner suite à déconnexion prolongée du pool"
+          message: "🔄 Restarting miner due to prolonged pool disconnection"
 ```
 
-### Mise à jour du firmware
+### Firmware Updates
 
-L'entité `update.nerdqaxe_firmware_update` vérifie automatiquement les nouvelles versions sur GitHub :
+The `update.nerdqaxe_firmware_update` entity automatically checks for new versions on GitHub:
 
-**Affichage dans Lovelace :**
+**Display in Lovelace:**
 
 ```yaml
 type: update
@@ -281,87 +284,88 @@ show_current_version: true
 show_latest_version: true
 ```
 
-**Installation d'une mise à jour :**
+**Installing an Update:**
 
-L'entité de mise à jour apparaît automatiquement dans le dashboard Home Assistant quand une nouvelle version est disponible. Cliquez simplement sur "Installer" pour télécharger et flasher la nouvelle version directement depuis GitHub.
+The update entity automatically appears in the Home Assistant dashboard when a new version is available. Simply click "Install" to download and flash the new version directly from GitHub.
 
-**Note importante :** Le miner redémarrera automatiquement après l'installation de la mise à jour.
+**Important note:** The miner will automatically restart after the update installation.
 
-## Développement
+## Development
 
-### Architecture technique
+### Technical Architecture
 
 #### `__init__.py`
-Fichier principal qui :
-- Initialise l'intégration
-- Crée le `DataUpdateCoordinator` pour gérer les mises à jour
-- Configure les plateformes (sensor, binary_sensor)
+Main file that:
+- Initializes the integration
+- Creates the `DataUpdateCoordinator` to manage updates
+- Configures platforms (sensor, binary_sensor, button, update)
 
-**Classe `NerdQAxeDataUpdateCoordinator` :**
-- Se connecte à `http://<host>/api/system/info` toutes les X secondes
-- Parse les données JSON
-- Distribue les données aux sensors via le pattern Coordinator
+**`NerdQAxeDataUpdateCoordinator` Class:**
+- Connects to `http://<host>/api/system/info` every X seconds
+- Parses JSON data
+- Distributes data to sensors via the Coordinator pattern
 
 #### `config_flow.py`
-Gère la configuration via l'UI :
-- Validation de la connexion au miner
-- Configuration de l'intervalle de scan
-- Détection automatique du hostname et modèle
+Handles UI configuration:
+- Validates miner connection
+- Configures scan interval
+- Automatic detection of hostname and model
 
 #### `sensor.py`
-Définit tous les sensors :
-- Utilise `CoordinatorEntity` pour les mises à jour automatiques
-- Device class appropriés pour l'Energy Dashboard
-- State class pour les statistiques long-terme
+Defines all sensors:
+- Uses `CoordinatorEntity` for automatic updates
+- Appropriate device classes for Energy Dashboard
+- State classes for long-term statistics
 
 #### `binary_sensor.py`
-Sensor binaire pour l'état de connexion au pool Stratum.
+Binary sensor for Stratum pool connection status.
 
 #### `button.py`
-Définit le bouton de redémarrage :
-- Appelle l'API `POST /api/system/restart` du miner
-- Redémarre le miner instantanément
+Defines the restart button:
+- Calls the miner's `POST /api/system/restart` API
+- Restarts the miner instantly
 
 #### `update.py`
-Entité de mise à jour firmware :
-- Vérifie les releases GitHub automatiquement
-- Compare la version installée avec la dernière version disponible
-- Filtre les pre-releases et versions RC
-- Télécharge et installe le firmware directement depuis GitHub
-- Utilise l'endpoint `POST /api/system/OTA/github` avec l'URL du firmware
-- Affiche les release notes dans Home Assistant
+Firmware update entity:
+- Automatically checks GitHub releases
+- Compares installed version with latest available version
+- Filters pre-releases and RC versions
+- Downloads and installs firmware directly from GitHub
+- Uses the `POST /api/system/OTA/github` endpoint with firmware URL
+- Displays release notes in Home Assistant
+- Checks for updates every 6 hours
 
-### Ajouter un nouveau sensor
+### Adding a New Sensor
 
-1. Dans `const.py`, ajouter la constante :
+1. In `const.py`, add the constant:
 ```python
-ATTR_NOUVEAU_CHAMP = "nouveauChamp"
+ATTR_NEW_FIELD = "newField"
 ```
 
-2. Dans `sensor.py`, ajouter dans la liste `entities` :
+2. In `sensor.py`, add to the `entities` list:
 ```python
 NerdQAxeSensor(
     coordinator,
-    "nouveau_sensor",
-    "Nom du Sensor",
-    ATTR_NOUVEAU_CHAMP,
+    "new_sensor",
+    "Sensor Name",
+    ATTR_NEW_FIELD,
     icon="mdi:icon-name",
-    unit="unité",
+    unit="unit",
     device_class=SensorDeviceClass.XXX,
     state_class=SensorStateClass.MEASUREMENT,
 ),
 ```
 
-### Test en local
+### Local Testing
 
-1. Copier `custom_components/nerdqaxe` dans votre config HA
-2. Redémarrer HA
-3. Ajouter l'intégration via l'UI
-4. Vérifier les logs : **Paramètres** → **Système** → **Journaux**
+1. Copy `custom_components/nerdqaxe` to your HA config
+2. Restart HA
+3. Add the integration via UI
+4. Check logs: **Settings** → **System** → **Logs**
 
 ### Debug
 
-Activer les logs de debug dans `configuration.yaml` :
+Enable debug logs in `configuration.yaml`:
 
 ```yaml
 logger:
@@ -370,71 +374,54 @@ logger:
     custom_components.nerdqaxe: debug
 ```
 
-## Roadmap / Features futures
+## Roadmap / Future Features
 
-### ✅ Features implémentées :
-- [x] Bouton de redémarrage du miner
-- [x] Entité de mise à jour avec vérification automatique des versions GitHub
-- [x] Sensor de version du firmware
-- [x] Intégration avec Energy Dashboard de HA (sensors power, voltage, current)
-- [x] Sensors pour l'uptime (via hashrate 1d)
+### ✅ Implemented Features:
+- [x] Miner restart button
+- [x] Update entity with automatic GitHub version checking
+- [x] Firmware version sensor
+- [x] HA Energy Dashboard integration (power, voltage, current sensors)
+- [x] Uptime sensors (via 1d hashrate)
+- [x] Periodic update checks (every 6 hours)
 
-### 🔜 Features à ajouter :
-- [ ] Support WebSocket pour mises à jour temps réel du hashrate
-- [ ] Service HA pour modifier la fréquence/voltage dynamiquement
-- [ ] Support multi-miners (plusieurs appareils dans une seule intégration)
-- [ ] Auto-découverte des miners sur le réseau (mDNS)
-- [ ] Dashboard Lovelace pré-configuré avec toutes les cartes
-- [ ] Sensor pour le pool difficulty
-- [ ] Alertes configurables intégrées via UI
-- [ ] Notification lors des mises à jour disponibles
-- [ ] Backup/restore de la configuration du miner
+### 🔜 Features to Add:
+- [ ] WebSocket support for real-time hashrate updates
+- [ ] HA service to dynamically modify frequency/voltage
+- [ ] Multi-miner support (multiple devices in one integration)
+- [ ] Network auto-discovery of miners (mDNS)
+- [ ] Pre-configured Lovelace dashboard with all cards
+- [ ] Pool difficulty sensor
+- [ ] Configurable alerts via UI
+- [ ] Update available notifications
+- [ ] Miner configuration backup/restore
 
-### Améliorations possibles :
-- Ajout de services Home Assistant pour contrôler le miner
-- Support de plusieurs miners simultanément avec un seul entry
-- Graphiques de performance intégrés
-- Notifications push configurables via UI
-- Support des boards NerdAxeGamma et autres variantes
+### Possible Improvements:
+- Add Home Assistant services to control the miner
+- Support multiple miners with a single entry
+- Integrated performance graphs
+- Configurable push notifications via UI
+- Support for NerdAxeGamma boards and other variants
 
-## Différence avec un Addon HA
+## Contributing
 
-**Custom Integration (HACS) :**
-- ✅ S'intègre directement dans Home Assistant
-- ✅ Utilise les sensors natifs HA
-- ✅ Léger et performant
-- ✅ Statistiques long-terme automatiques
-- ✅ Compatible Energy Dashboard
-- ❌ Pas d'interface web séparée
+Contributions are welcome! Feel free to:
+- Open an issue for a bug or feature request
+- Submit a pull request
+- Improve documentation
 
-**Addon (Docker) :**
-- ✅ Peut avoir une interface web
-- ✅ Indépendant de HA
-- ❌ Plus lourd (conteneur Docker)
-- ❌ Nécessite Supervisor
-
-Ce projet est une **Custom Integration HACS**, donc plus légère et mieux intégrée !
-
-## Contribution
-
-Les contributions sont bienvenues ! N'hésitez pas à :
-- Ouvrir une issue pour un bug ou une feature request
-- Soumettre une pull request
-- Améliorer la documentation
-
-## Licence
+## License
 
 MIT
 
-## Crédits
+## Credits
 
-- **Firmware NerdQAxe+** : https://github.com/shufps/ESP-Miner-NerdQAxePlus
-- **Hardware NerdQAxe+** : https://github.com/shufps/qaxe
-- **BitAxe devs** : @skot (ESP-Miner), @ben, @jhonny
-- **NerdAxe dev** : @BitMaker
+- **NerdQAxe+ Firmware**: https://github.com/shufps/ESP-Miner-NerdQAxePlus
+- **NerdQAxe+ Hardware**: https://github.com/shufps/qaxe
+- **BitAxe devs**: @skot (ESP-Miner), @ben, @jhonny
+- **NerdAxe dev**: @BitMaker
 
 ## Support
 
-- **Issues intégration HA** : [GitHub Issues](https://github.com/VOTRE_USERNAME/homeassistant-nerdqaxe/issues)
-- **Issues firmware** : [ESP-Miner-NerdQAxePlus Issues](https://github.com/shufps/ESP-Miner-NerdQAxePlus/issues)
-- **Discord NerdMiner** : [![Discord](https://dcbadge.vercel.app/api/server/3E8ca2dkcC)](https://discord.gg/3E8ca2dkcC)
+- **HA Integration Issues**: [GitHub Issues](https://github.com/foXaCe/homeassistant-nerdqaxe-addon/issues)
+- **Firmware Issues**: [ESP-Miner-NerdQAxePlus Issues](https://github.com/shufps/ESP-Miner-NerdQAxePlus/issues)
+- **NerdMiner Discord**: [![Discord](https://dcbadge.vercel.app/api/server/3E8ca2dkcC)](https://discord.gg/3E8ca2dkcC)
