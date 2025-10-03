@@ -272,16 +272,7 @@ async def async_setup_entry(
             ATTR_VERSION,
             icon="mdi:information-outline",
         ),
-        NerdQAxeSensor(
-            coordinator,
-            "uptime",
-            "Uptime",
-            ATTR_UPTIME,
-            icon="mdi:clock-outline",
-            unit="s",
-            device_class=SensorDeviceClass.DURATION,
-            state_class=SensorStateClass.TOTAL_INCREASING,
-        ),
+        NerdQAxeUptimeSensor(coordinator),
     ]
 
     async_add_entities(entities)
@@ -336,3 +327,44 @@ class NerdQAxeSensor(CoordinatorEntity, SensorEntity):
                 return round(value, 2)
 
         return value
+
+
+class NerdQAxeUptimeSensor(CoordinatorEntity, SensorEntity):
+    """Representation of NerdQAxe+ uptime sensor with formatted display."""
+
+    def __init__(self, coordinator: NerdQAxeDataUpdateCoordinator) -> None:
+        """Initialize the uptime sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.host}_uptime"
+        self._attr_name = "NerdQAxe Uptime"
+        self._attr_icon = "mdi:clock-outline"
+
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, coordinator.host)},
+            "name": f"NerdQAxe+ Miner ({coordinator.host})",
+            "manufacturer": "NerdQAxe",
+            "model": coordinator.data.get(ATTR_DEVICE_MODEL, "Unknown") if coordinator.data else "Unknown",
+        }
+
+    @property
+    def native_value(self):
+        """Return formatted uptime."""
+        if not self.coordinator.data:
+            return None
+
+        uptime_seconds = self.coordinator.data.get(ATTR_UPTIME)
+        if uptime_seconds is None:
+            return None
+
+        # Convert seconds to days, hours, minutes
+        days = uptime_seconds // 86400
+        hours = (uptime_seconds % 86400) // 3600
+        minutes = (uptime_seconds % 3600) // 60
+
+        # Format display based on duration
+        if days > 0:
+            return f"{days}d {hours}h {minutes}min"
+        elif hours > 0:
+            return f"{hours}h {minutes}min"
+        else:
+            return f"{minutes}min"
