@@ -45,6 +45,7 @@ from .const import (
     ATTR_CORE_VOLTAGE,
     ATTR_FREQUENCY,
     ATTR_VERSION,
+    ATTR_UPTIME,
 )
 
 
@@ -270,6 +271,16 @@ async def async_setup_entry(
             "Firmware Version",
             ATTR_VERSION,
             icon="mdi:information-outline",
+        ),
+        NerdQAxeSensor(
+            coordinator,
+            "uptime",
+            "Uptime",
+            ATTR_UPTIME,
+            icon="mdi:clock-outline",
+            unit="s",
+            device_class=SensorDeviceClass.DURATION,
+            state_class=SensorStateClass.TOTAL_INCREASING,
         ),
     ]
 

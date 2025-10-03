@@ -44,6 +44,7 @@ ATTR_TOTAL_FOUND_BLOCKS = "totalFoundBlocks"
 ATTR_CORE_VOLTAGE = "coreVoltage"
 ATTR_FREQUENCY = "frequency"
 ATTR_VERSION = "version"
+ATTR_UPTIME = "uptimeSeconds"
 
 # GitHub
 GITHUB_REPO = "shufps/ESP-Miner-NerdQAxePlus"
