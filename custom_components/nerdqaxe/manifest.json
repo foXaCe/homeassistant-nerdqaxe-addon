@@ -1,11 +1,11 @@
 {
   "domain": "nerdqaxe",
   "name": "NerdQAxe+ Miner",
-  "version": "1.0.0",
-  "documentation": "https://github.com/VOTRE_USERNAME/homeassistant-nerdqaxe",
-  "issue_tracker": "https://github.com/VOTRE_USERNAME/homeassistant-nerdqaxe/issues",
+  "version": "1.1.0",
+  "documentation": "https://github.com/foXaCe/homeassistant-nerdqaxe-addon",
+  "issue_tracker": "https://github.com/foXaCe/homeassistant-nerdqaxe-addon/issues",
   "requirements": ["aiohttp>=3.8.0"],
-  "codeowners": ["@VOTRE_USERNAME"],
+  "codeowners": ["@foXaCe"],
   "config_flow": true,
   "iot_class": "local_polling",
   "integration_type": "device"

@@ -56,6 +56,7 @@ custom_components/nerdqaxe/
 ├── sensor.py            # Sensors (hashrate, temp, power, etc.)
 ├── binary_sensor.py     # Binary sensors (stratum connected)
 ├── button.py            # Restart button
+├── number.py            # Number controls (frequency, voltage)
 └── update.py            # Firmware update entity
 ```
 
@@ -102,6 +103,8 @@ The integration automatically creates the following sensors:
 
 ### Control and Updates
 - `button.nerdqaxe_restart` - Button to restart the miner
+- `number.nerdqaxe_asic_frequency` - ASIC frequency control (400-575 MHz)
+- `number.nerdqaxe_core_voltage` - Core voltage control (1000-1300 mV)
 - `update.nerdqaxe_firmware_update` - Firmware update entity (automatically checks for new versions on GitHub)
 
 ## Installation
@@ -270,6 +273,46 @@ automation:
           message: "🔄 Restarting miner due to prolonged pool disconnection"
 ```
 
+### Frequency and Voltage Control
+
+Control your miner's performance by adjusting frequency and core voltage:
+
+**In Lovelace:**
+
+```yaml
+type: entities
+title: Miner Performance Control
+entities:
+  - entity: number.nerdqaxe_asic_frequency
+    name: ASIC Frequency
+  - entity: number.nerdqaxe_core_voltage
+    name: Core Voltage
+  - entity: sensor.nerdqaxe_power
+    name: Current Power
+  - entity: sensor.nerdqaxe_temperature
+    name: Temperature
+```
+
+**Via Automation:**
+
+```yaml
+automation:
+  - alias: "Reduce Power on High Temperature"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.nerdqaxe_temperature
+        above: 75
+    action:
+      - service: number.set_value
+        target:
+          entity_id: number.nerdqaxe_asic_frequency
+        data:
+          value: 450
+      - service: notify.mobile_app
+        data:
+          message: "⚠️ Temperature high, reducing frequency to 450 MHz"
+```
+
 ### Firmware Updates
 
 The `update.nerdqaxe_firmware_update` entity automatically checks for new versions on GitHub:
@@ -324,6 +367,13 @@ Binary sensor for Stratum pool connection status.
 Defines the restart button:
 - Calls the miner's `POST /api/system/restart` API
 - Restarts the miner instantly
+
+#### `number.py`
+Number entities for performance control:
+- ASIC frequency control (400-575 MHz)
+- Core voltage control (1000-1300 mV)
+- Calls the miner's `POST /api/system/asic` API
+- Automatically refreshes coordinator after changes
 
 #### `update.py`
 Firmware update entity:
@@ -383,10 +433,10 @@ logger:
 - [x] HA Energy Dashboard integration (power, voltage, current sensors)
 - [x] Uptime sensors (via 1d hashrate)
 - [x] Periodic update checks (every 6 hours)
+- [x] Number entities to dynamically modify frequency/voltage
 
 ### 🔜 Features to Add:
 - [ ] WebSocket support for real-time hashrate updates
-- [ ] HA service to dynamically modify frequency/voltage
 - [ ] Multi-miner support (multiple devices in one integration)
 - [ ] Network auto-discovery of miners (mDNS)
 - [ ] Pre-configured Lovelace dashboard with all cards
