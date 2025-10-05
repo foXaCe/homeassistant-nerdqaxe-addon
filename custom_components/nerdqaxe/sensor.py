@@ -317,6 +317,10 @@ class NerdQAxeSensor(CoordinatorEntity, SensorEntity):
 
         value = self.coordinator.data.get(self._data_key)
 
+        # Remove 'v' prefix from version string
+        if self._data_key == ATTR_VERSION and isinstance(value, str):
+            return value.lstrip("v")
+
         # Round numeric values
         if isinstance(value, (int, float)):
             if self._data_key in [ATTR_HASHRATE, ATTR_HASHRATE_1M, ATTR_HASHRATE_10M, ATTR_HASHRATE_1H, ATTR_HASHRATE_1D]:

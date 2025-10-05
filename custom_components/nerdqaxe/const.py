@@ -15,6 +15,7 @@ API_SYSTEM_INFO = "/api/system/info"
 API_SYSTEM_ASIC = "/api/system/asic"
 API_SYSTEM_RESTART = "/api/system/restart"
 API_OTA_GITHUB = "/api/system/OTA/github"
+API_OTA_WWW_GITHUB = "/api/system/OTA/www/github"
 
 # Attributes
 ATTR_HASHRATE = "hashRate"
