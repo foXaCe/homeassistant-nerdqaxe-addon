@@ -60,6 +60,7 @@ class NerdQAxeUpdateEntity(CoordinatorEntity, UpdateEntity):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_update"
         self._attr_name = "NerdQAxe Firmware Update"
+        self._attr_translation_key = "update"
         self._latest_version: str | None = None
         self._release_notes: str | None = None
         self._download_url: str | None = None
@@ -216,6 +217,7 @@ class NerdQAxeWWWUpdateEntity(CoordinatorEntity, UpdateEntity):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_www_update"
         self._attr_name = "NerdQAxe WWW Update"
+        self._attr_translation_key = "www_update"
         self._latest_version: str | None = None
         self._release_notes: str | None = None
         self._download_url: str | None = None

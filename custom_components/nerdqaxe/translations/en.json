@@ -1,0 +1,136 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "NerdQAxe+ Miner",
+        "description": "Enter the IP address or hostname of your NerdQAxe+ miner",
+        "data": {
+          "host": "Host"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the miner. Please check the host address.",
+      "unknown": "An unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "This device is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "NerdQAxe+ Miner Options",
+        "description": "Configure scan interval for data updates",
+        "data": {
+          "scan_interval": "Scan Interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "hashrate": {
+        "name": "Hashrate"
+      },
+      "hashrate_1m": {
+        "name": "Hashrate 1m"
+      },
+      "hashrate_10m": {
+        "name": "Hashrate 10m"
+      },
+      "hashrate_1h": {
+        "name": "Hashrate 1h"
+      },
+      "hashrate_1d": {
+        "name": "Hashrate 1d"
+      },
+      "temperature": {
+        "name": "Chip Temperature"
+      },
+      "vr_temperature": {
+        "name": "VR Temperature"
+      },
+      "power": {
+        "name": "Power"
+      },
+      "voltage": {
+        "name": "Voltage"
+      },
+      "current": {
+        "name": "Current"
+      },
+      "core_voltage": {
+        "name": "Core Voltage"
+      },
+      "fan_speed": {
+        "name": "Fan Speed"
+      },
+      "fan_rpm": {
+        "name": "Fan RPM"
+      },
+      "shares_accepted": {
+        "name": "Shares Accepted"
+      },
+      "shares_rejected": {
+        "name": "Shares Rejected"
+      },
+      "best_difficulty": {
+        "name": "Best Difficulty"
+      },
+      "best_session_difficulty": {
+        "name": "Best Session Difficulty"
+      },
+      "found_blocks": {
+        "name": "Found Blocks (Session)"
+      },
+      "total_found_blocks": {
+        "name": "Total Found Blocks"
+      },
+      "device_model": {
+        "name": "Device Model"
+      },
+      "hostname": {
+        "name": "Hostname"
+      },
+      "wifi_rssi": {
+        "name": "WiFi RSSI"
+      },
+      "frequency": {
+        "name": "ASIC Frequency"
+      },
+      "version": {
+        "name": "Firmware Version"
+      },
+      "uptime": {
+        "name": "Uptime"
+      }
+    },
+    "binary_sensor": {
+      "stratum_connected": {
+        "name": "Stratum Connected"
+      }
+    },
+    "button": {
+      "restart": {
+        "name": "Restart"
+      }
+    },
+    "number": {
+      "frequency": {
+        "name": "ASIC Frequency"
+      },
+      "core_voltage": {
+        "name": "Core Voltage"
+      }
+    },
+    "update": {
+      "update": {
+        "name": "Firmware Update"
+      },
+      "www_update": {
+        "name": "WWW Update"
+      }
+    }
+  }
+}

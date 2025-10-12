@@ -48,6 +48,7 @@ class NerdQAxeRestartButton(CoordinatorEntity, ButtonEntity):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_restart"
         self._attr_name = "NerdQAxe Restart"
+        self._attr_translation_key = "restart"
 
         self._attr_device_info = {
             "identifiers": {(DOMAIN, coordinator.host)},

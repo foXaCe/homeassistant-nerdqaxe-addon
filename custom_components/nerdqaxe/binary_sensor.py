@@ -43,6 +43,7 @@ class NerdQAxeStratumSensor(CoordinatorEntity, BinarySensorEntity):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_stratum_connected"
         self._attr_name = "NerdQAxe Stratum Connected"
+        self._attr_translation_key = "stratum_connected"
 
         self._attr_device_info = {
             "identifiers": {(DOMAIN, coordinator.host)},

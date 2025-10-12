@@ -1,0 +1,136 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mineur NerdQAxe+",
+        "description": "Entrez l'adresse IP ou le nom d'hôte de votre mineur NerdQAxe+",
+        "data": {
+          "host": "Hôte"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Échec de connexion au mineur. Veuillez vérifier l'adresse de l'hôte.",
+      "unknown": "Une erreur inattendue s'est produite"
+    },
+    "abort": {
+      "already_configured": "Ce périphérique est déjà configuré"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options du mineur NerdQAxe+",
+        "description": "Configurer l'intervalle de scan pour les mises à jour des données",
+        "data": {
+          "scan_interval": "Intervalle de scan (secondes)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "hashrate": {
+        "name": "Taux de hachage"
+      },
+      "hashrate_1m": {
+        "name": "Taux de hachage 1m"
+      },
+      "hashrate_10m": {
+        "name": "Taux de hachage 10m"
+      },
+      "hashrate_1h": {
+        "name": "Taux de hachage 1h"
+      },
+      "hashrate_1d": {
+        "name": "Taux de hachage 1j"
+      },
+      "temperature": {
+        "name": "Température de la puce"
+      },
+      "vr_temperature": {
+        "name": "Température VR"
+      },
+      "power": {
+        "name": "Puissance"
+      },
+      "voltage": {
+        "name": "Tension"
+      },
+      "current": {
+        "name": "Courant"
+      },
+      "core_voltage": {
+        "name": "Tension du cœur"
+      },
+      "fan_speed": {
+        "name": "Vitesse du ventilateur"
+      },
+      "fan_rpm": {
+        "name": "Tours/min ventilateur"
+      },
+      "shares_accepted": {
+        "name": "Partages acceptés"
+      },
+      "shares_rejected": {
+        "name": "Partages rejetés"
+      },
+      "best_difficulty": {
+        "name": "Meilleure difficulté"
+      },
+      "best_session_difficulty": {
+        "name": "Meilleure difficulté de session"
+      },
+      "found_blocks": {
+        "name": "Blocs trouvés (session)"
+      },
+      "total_found_blocks": {
+        "name": "Total des blocs trouvés"
+      },
+      "device_model": {
+        "name": "Modèle de l'appareil"
+      },
+      "hostname": {
+        "name": "Nom d'hôte"
+      },
+      "wifi_rssi": {
+        "name": "Signal WiFi"
+      },
+      "frequency": {
+        "name": "Fréquence ASIC"
+      },
+      "version": {
+        "name": "Version du firmware"
+      },
+      "uptime": {
+        "name": "Durée de fonctionnement"
+      }
+    },
+    "binary_sensor": {
+      "stratum_connected": {
+        "name": "Connexion Stratum"
+      }
+    },
+    "button": {
+      "restart": {
+        "name": "Redémarrer"
+      }
+    },
+    "number": {
+      "frequency": {
+        "name": "Fréquence ASIC"
+      },
+      "core_voltage": {
+        "name": "Tension du cœur"
+      }
+    },
+    "update": {
+      "update": {
+        "name": "Mise à jour du firmware"
+      },
+      "www_update": {
+        "name": "Mise à jour WWW"
+      }
+    }
+  }
+}

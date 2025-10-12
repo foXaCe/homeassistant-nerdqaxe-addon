@@ -296,6 +296,7 @@ class NerdQAxeSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_{sensor_id}"
         self._attr_name = f"NerdQAxe {name}"
+        self._attr_translation_key = sensor_id
         self._data_key = data_key
         self._attr_icon = icon
         self._attr_native_unit_of_measurement = unit
@@ -341,6 +342,7 @@ class NerdQAxeUptimeSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_uptime"
         self._attr_name = "NerdQAxe Uptime"
+        self._attr_translation_key = "uptime"
         self._attr_icon = "mdi:clock-outline"
 
         self._attr_device_info = {
@@ -349,6 +351,23 @@ class NerdQAxeUptimeSensor(CoordinatorEntity, SensorEntity):
             "manufacturer": "NerdQAxe",
             "model": coordinator.data.get(ATTR_DEVICE_MODEL, "Unknown") if coordinator.data else "Unknown",
         }
+
+    def _get_time_units(self) -> dict[str, str]:
+        """Get localized time unit abbreviations based on Home Assistant language."""
+        language = self.hass.config.language if self.hass else "en"
+
+        # Time unit abbreviations per language
+        units = {
+            "fr": {"day": "j", "hour": "h", "minute": "min"},
+            "en": {"day": "d", "hour": "h", "minute": "min"},
+            "de": {"day": "T", "hour": "Std", "minute": "Min"},
+            "es": {"day": "d", "hour": "h", "minute": "min"},
+            "it": {"day": "g", "hour": "h", "minute": "min"},
+            "nl": {"day": "d", "hour": "u", "minute": "min"},
+            "pt": {"day": "d", "hour": "h", "minute": "min"},
+        }
+
+        return units.get(language, units["en"])
 
     @property
     def native_value(self):
@@ -365,10 +384,13 @@ class NerdQAxeUptimeSensor(CoordinatorEntity, SensorEntity):
         hours = (uptime_seconds % 86400) // 3600
         minutes = (uptime_seconds % 3600) // 60
 
+        # Get localized time units
+        units = self._get_time_units()
+
         # Format display based on duration
         if days > 0:
-            return f"{days}d {hours}h {minutes}min"
+            return f"{days}{units['day']} {hours}{units['hour']} {minutes}{units['minute']}"
         elif hours > 0:
-            return f"{hours}h {minutes}min"
+            return f"{hours}{units['hour']} {minutes}{units['minute']}"
         else:
-            return f"{minutes}min"
+            return f"{minutes}{units['minute']}"
