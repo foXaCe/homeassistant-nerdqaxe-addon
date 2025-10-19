@@ -4,13 +4,13 @@
 
 HACS integration to monitor and control your NerdQAxe+ Bitcoin Miner in Home Assistant.
 
-## 💰 Soutenir le Projet
+## 💰 Support the Project
 
-Si cette intégration vous est utile, vous pouvez soutenir son développement avec un don en Bitcoin :
+If this integration is useful to you, you can support its development with a Bitcoin donation:
 
-**🪙 Adresse Bitcoin :** `bc1qhe4ge22x0anuyeg0fmts6rdmz3t735dnqwt3p7`
+**🪙 Bitcoin Address:** `bc1qhe4ge22x0anuyeg0fmts6rdmz3t735dnqwt3p7`
 
-Vos contributions m'aident à continuer d'améliorer ce projet et à ajouter de nouvelles fonctionnalités. Merci ! 🙏
+Your contributions help me continue improving this project and adding new features. Thank you! 🙏
 
 
 ## Description
