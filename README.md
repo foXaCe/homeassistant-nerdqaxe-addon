@@ -4,6 +4,15 @@
 
 HACS integration to monitor and control your NerdQAxe+ Bitcoin Miner in Home Assistant.
 
+## 💰 Soutenir le Projet
+
+Si cette intégration vous est utile, vous pouvez soutenir son développement avec un don en Bitcoin :
+
+**🪙 Adresse Bitcoin :** `bc1qhe4ge22x0anuyeg0fmts6rdmz3t735dnqwt3p7`
+
+Vos contributions m'aident à continuer d'améliorer ce projet et à ajouter de nouvelles fonctionnalités. Merci ! 🙏
+
+
 ## Description
 
 This custom integration allows you to integrate your NerdQAxe+ miner into Home Assistant. It automatically creates sensors to monitor performance, temperature, power consumption, and more.
