@@ -1,6 +1,8 @@
 """Support for NerdQAxe+ Miner sensors."""
 from __future__ import annotations
 
+import logging
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -48,14 +50,27 @@ from .const import (
     ATTR_UPTIME,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up NerdQAxe+ Miner sensors."""
+    """Set up NerdQAxe+ Miner sensors from a config entry.
+
+    Creates all sensor entities including hashrate, temperature, power,
+    fan, mining statistics, and device information sensors.
+
+    Args:
+        hass: Home Assistant instance
+        entry: Config entry
+        async_add_entities: Callback to add entities
+    """
     coordinator: NerdQAxeDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+
+    _LOGGER.debug("Setting up %d sensor entities for %s", 25, coordinator.host)
 
     entities = [
         # Hashrate sensors
@@ -66,7 +81,6 @@ async def async_setup_entry(
             ATTR_HASHRATE,
             icon="mdi:speedometer",
             unit="GH/s",
-            device_class=SensorDeviceClass.POWER_FACTOR,
             state_class=SensorStateClass.MEASUREMENT,
         ),
         NerdQAxeSensor(
@@ -76,7 +90,6 @@ async def async_setup_entry(
             ATTR_HASHRATE_1M,
             icon="mdi:speedometer",
             unit="GH/s",
-            device_class=SensorDeviceClass.POWER_FACTOR,
             state_class=SensorStateClass.MEASUREMENT,
         ),
         NerdQAxeSensor(
@@ -86,7 +99,6 @@ async def async_setup_entry(
             ATTR_HASHRATE_10M,
             icon="mdi:speedometer",
             unit="GH/s",
-            device_class=SensorDeviceClass.POWER_FACTOR,
             state_class=SensorStateClass.MEASUREMENT,
         ),
         NerdQAxeSensor(
@@ -96,7 +108,6 @@ async def async_setup_entry(
             ATTR_HASHRATE_1H,
             icon="mdi:speedometer",
             unit="GH/s",
-            device_class=SensorDeviceClass.POWER_FACTOR,
             state_class=SensorStateClass.MEASUREMENT,
         ),
         NerdQAxeSensor(
@@ -106,7 +117,6 @@ async def async_setup_entry(
             ATTR_HASHRATE_1D,
             icon="mdi:speedometer",
             unit="GH/s",
-            device_class=SensorDeviceClass.POWER_FACTOR,
             state_class=SensorStateClass.MEASUREMENT,
         ),
         # Temperature sensors
@@ -276,10 +286,15 @@ async def async_setup_entry(
     ]
 
     async_add_entities(entities)
+    _LOGGER.info("Successfully set up %d sensor entities for %s", len(entities), coordinator.host)
 
 
 class NerdQAxeSensor(CoordinatorEntity, SensorEntity):
-    """Representation of a NerdQAxe+ Miner sensor."""
+    """Representation of a NerdQAxe+ Miner sensor.
+
+    Generic sensor entity that reads a specific data key from the coordinator
+    and displays it with appropriate formatting and unit of measurement.
+    """
 
     def __init__(
         self,
@@ -292,7 +307,18 @@ class NerdQAxeSensor(CoordinatorEntity, SensorEntity):
         device_class: SensorDeviceClass | None = None,
         state_class: SensorStateClass | None = None,
     ) -> None:
-        """Initialize the sensor."""
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Data update coordinator instance
+            sensor_id: Unique identifier for translation key
+            name: Display name for the sensor
+            data_key: Key to extract from coordinator data
+            icon: Optional MDI icon
+            unit: Optional unit of measurement
+            device_class: Optional Home Assistant device class
+            state_class: Optional state class for statistics
+        """
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_{sensor_id}"
         self._attr_name = f"NerdQAxe {name}"
@@ -302,17 +328,18 @@ class NerdQAxeSensor(CoordinatorEntity, SensorEntity):
         self._attr_native_unit_of_measurement = unit
         self._attr_device_class = device_class
         self._attr_state_class = state_class
-
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, coordinator.host)},
-            "name": f"NerdQAxe+ Miner ({coordinator.host})",
-            "manufacturer": "NerdQAxe",
-            "model": coordinator.data.get(ATTR_DEVICE_MODEL, "Unknown") if coordinator.data else "Unknown",
-        }
+        self._attr_device_info = coordinator.get_device_info()
 
     @property
-    def native_value(self):
-        """Return the state of the sensor."""
+    def native_value(self) -> str | int | float | None:
+        """Return the state of the sensor.
+
+        Extracts value from coordinator data and applies formatting based on
+        data type (version strings, hashrates, temperatures, etc.).
+
+        Returns:
+            Sensor value with appropriate formatting, or None if unavailable
+        """
         if not self.coordinator.data:
             return None
 
@@ -335,25 +362,31 @@ class NerdQAxeSensor(CoordinatorEntity, SensorEntity):
 
 
 class NerdQAxeUptimeSensor(CoordinatorEntity, SensorEntity):
-    """Representation of NerdQAxe+ uptime sensor with formatted display."""
+    """Representation of NerdQAxe+ uptime sensor with formatted display.
+
+    Displays miner uptime with localized time units based on Home Assistant
+    language configuration. Supports 7 languages with appropriate abbreviations.
+    """
 
     def __init__(self, coordinator: NerdQAxeDataUpdateCoordinator) -> None:
-        """Initialize the uptime sensor."""
+        """Initialize the uptime sensor.
+
+        Args:
+            coordinator: Data update coordinator instance
+        """
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_uptime"
         self._attr_name = "NerdQAxe Uptime"
         self._attr_translation_key = "uptime"
         self._attr_icon = "mdi:clock-outline"
-
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, coordinator.host)},
-            "name": f"NerdQAxe+ Miner ({coordinator.host})",
-            "manufacturer": "NerdQAxe",
-            "model": coordinator.data.get(ATTR_DEVICE_MODEL, "Unknown") if coordinator.data else "Unknown",
-        }
+        self._attr_device_info = coordinator.get_device_info()
 
     def _get_time_units(self) -> dict[str, str]:
-        """Get localized time unit abbreviations based on Home Assistant language."""
+        """Get localized time unit abbreviations based on Home Assistant language.
+
+        Returns:
+            dict: Time unit abbreviations (day, hour, minute) for current language
+        """
         language = self.hass.config.language if self.hass else "en"
 
         # Time unit abbreviations per language
@@ -370,8 +403,15 @@ class NerdQAxeUptimeSensor(CoordinatorEntity, SensorEntity):
         return units.get(language, units["en"])
 
     @property
-    def native_value(self):
-        """Return formatted uptime."""
+    def native_value(self) -> str | None:
+        """Return formatted uptime with localized time units.
+
+        Converts uptime seconds to a human-readable format (e.g., "5d 12h 30min")
+        using language-specific abbreviations.
+
+        Returns:
+            Formatted uptime string, or None if unavailable
+        """
         if not self.coordinator.data:
             return None
 
