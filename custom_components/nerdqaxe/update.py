@@ -123,12 +123,12 @@ class NerdQAxeUpdateEntity(CoordinatorEntity, UpdateEntity):
                                     self._download_url = asset.get("browser_download_url")
                                     break
 
-                        _LOGGER.debug(f"Latest version: {self._latest_version}, URL: {self._download_url}")
+                        _LOGGER.debug("Latest firmware version: %s, URL: %s", self._latest_version, self._download_url)
 
         except aiohttp.ClientError as err:
-            _LOGGER.warning(f"Failed to check for updates: {err}")
+            _LOGGER.warning("Failed to check for firmware updates: %s", err)
         except Exception as err:
-            _LOGGER.error(f"Unexpected error checking for updates: {err}")
+            _LOGGER.error("Unexpected error checking for firmware updates: %s", err)
 
     @property
     def installed_version(self) -> str | None:
@@ -186,10 +186,10 @@ class NerdQAxeUpdateEntity(CoordinatorEntity, UpdateEntity):
     ) -> None:
         """Install an update."""
         if not self._download_url:
-            _LOGGER.error("No download URL available for update")
+            _LOGGER.error("No download URL available for firmware update")
             return
 
-        _LOGGER.info(f"Starting firmware update from {self._download_url}")
+        _LOGGER.info("Starting firmware update from %s on %s", self._download_url, self.coordinator.host)
 
         try:
             async with async_timeout.timeout(300):  # 5 minute timeout for OTA
@@ -200,9 +200,9 @@ class NerdQAxeUpdateEntity(CoordinatorEntity, UpdateEntity):
                 ) as response:
                     response.raise_for_status()
                     result = await response.text()
-                    _LOGGER.info(f"Firmware update initiated: {result}")
+                    _LOGGER.info("Firmware update initiated successfully on %s: %s", self.coordinator.host, result)
         except aiohttp.ClientError as err:
-            _LOGGER.error(f"Failed to update firmware: {err}")
+            _LOGGER.error("Failed to update firmware on %s: %s", self.coordinator.host, err)
             raise
 
 
@@ -274,12 +274,12 @@ class NerdQAxeWWWUpdateEntity(CoordinatorEntity, UpdateEntity):
                                 self._download_url = asset.get("browser_download_url")
                                 break
 
-                        _LOGGER.debug(f"Latest WWW version: {self._latest_version}, URL: {self._download_url}")
+                        _LOGGER.debug("Latest WWW version: %s, URL: %s", self._latest_version, self._download_url)
 
         except aiohttp.ClientError as err:
-            _LOGGER.warning(f"Failed to check for WWW updates: {err}")
+            _LOGGER.warning("Failed to check for WWW updates: %s", err)
         except Exception as err:
-            _LOGGER.error(f"Unexpected error checking for WWW updates: {err}")
+            _LOGGER.error("Unexpected error checking for WWW updates: %s", err)
 
     @property
     def installed_version(self) -> str | None:
@@ -314,7 +314,7 @@ class NerdQAxeWWWUpdateEntity(CoordinatorEntity, UpdateEntity):
             _LOGGER.error("No download URL available for WWW update")
             return
 
-        _LOGGER.info(f"Starting WWW update from {self._download_url}")
+        _LOGGER.info("Starting WWW update from %s on %s", self._download_url, self.coordinator.host)
 
         try:
             async with async_timeout.timeout(300):  # 5 minute timeout for OTA
@@ -325,7 +325,7 @@ class NerdQAxeWWWUpdateEntity(CoordinatorEntity, UpdateEntity):
                 ) as response:
                     response.raise_for_status()
                     result = await response.text()
-                    _LOGGER.info(f"WWW update initiated: {result}")
+                    _LOGGER.info("WWW update initiated successfully on %s: %s", self.coordinator.host, result)
         except aiohttp.ClientError as err:
-            _LOGGER.error(f"Failed to update WWW: {err}")
+            _LOGGER.error("Failed to update WWW on %s: %s", self.coordinator.host, err)
             raise

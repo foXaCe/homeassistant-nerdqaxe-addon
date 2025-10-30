@@ -27,15 +27,33 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
-    """Validate the user input allows us to connect."""
+    """Validate the user input allows us to connect to the miner.
+
+    Tests connection to the miner API and retrieves device information
+    for config entry creation.
+
+    Args:
+        hass: Home Assistant instance
+        data: User input data containing host
+
+    Returns:
+        dict: Device information (title, device_model, mac_addr)
+
+    Raises:
+        CannotConnect: If connection to miner fails
+    """
     host = data[CONF_HOST]
     session = async_get_clientsession(hass)
+
+    _LOGGER.debug("Validating connection to NerdQAxe+ miner at %s", host)
 
     try:
         async with async_timeout.timeout(10):
             async with session.get(f"http://{host}{API_SYSTEM_INFO}") as response:
                 response.raise_for_status()
                 result = await response.json()
+
+                _LOGGER.info("Successfully connected to miner at %s (hostname: %s)", host, result.get("hostname", "unknown"))
 
                 # Return info that you want to store in the config entry.
                 return {
@@ -47,19 +65,30 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         _LOGGER.error("Could not connect to NerdQAxe+ Miner at %s: %s", host, err)
         raise CannotConnect
     except Exception as err:
-        _LOGGER.error("Unexpected exception: %s", err)
+        _LOGGER.error("Unexpected exception during validation for %s: %s", host, err)
         raise CannotConnect
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for NerdQAxe+ Miner."""
+    """Handle a config flow for NerdQAxe+ Miner integration.
+
+    Provides UI-based configuration with miner host validation and
+    unique device identification via MAC address.
+    """
 
     VERSION = 1
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the initial step."""
+        """Handle the initial setup step.
+
+        Args:
+            user_input: User-provided configuration data
+
+        Returns:
+            FlowResult: Form to show or config entry to create
+        """
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -94,21 +123,42 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,
     ) -> OptionsFlowHandler:
-        """Get the options flow for this handler."""
+        """Get the options flow for this handler.
+
+        Args:
+            config_entry: Config entry to manage options for
+
+        Returns:
+            OptionsFlowHandler: Options flow handler instance
+        """
         return OptionsFlowHandler(config_entry)
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle options."""
+    """Handle options flow for NerdQAxe+ integration.
+
+    Allows users to configure scan interval after initial setup.
+    """
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
+        """Initialize options flow.
+
+        Args:
+            config_entry: Config entry to manage options for
+        """
         self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage the options."""
+        """Manage the integration options.
+
+        Args:
+            user_input: User-provided options data
+
+        Returns:
+            FlowResult: Form to show or options entry to create
+        """
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
@@ -128,4 +178,4 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
 
 class CannotConnect(Exception):
-    """Error to indicate we cannot connect."""
+    """Exception raised when connection to miner fails."""
