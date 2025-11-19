@@ -1,11 +1,12 @@
 """The NerdQAxe+ Miner integration."""
 from __future__ import annotations
 
+import asyncio
 import logging
+import traceback
 from datetime import timedelta
 
 import aiohttp
-import async_timeout
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -156,7 +157,7 @@ class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator):
             UpdateFailed: If API communication fails or times out
         """
         try:
-            async with async_timeout.timeout(10):
+            async with asyncio.timeout(10):
                 async with self.session.get(
                     f"{self.base_url}{API_SYSTEM_INFO}"
                 ) as response:
@@ -164,9 +165,20 @@ class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator):
                     data = await response.json()
                     _LOGGER.debug("Received data from %s: %s", self.host, data)
                     return data
+        except asyncio.TimeoutError:
+            error_msg = f"Timeout connecting to miner at {self.host}"
+            _LOGGER.warning(error_msg)
+            raise UpdateFailed(error_msg)
         except aiohttp.ClientError as err:
+            error_msg = f"Error communicating with API: {err}"
             _LOGGER.warning("Error communicating with miner API at %s: %s", self.host, err)
-            raise UpdateFailed(f"Error communicating with API: {err}")
+            raise UpdateFailed(error_msg)
         except Exception as err:
-            _LOGGER.error("Unexpected error fetching data from %s: %s", self.host, err)
-            raise UpdateFailed(f"Unexpected error: {err}")
+            error_msg = f"Unexpected error: {type(err).__name__}: {err}"
+            _LOGGER.error(
+                "Unexpected error fetching data from %s: %s\n%s",
+                self.host,
+                error_msg,
+                traceback.format_exc()
+            )
+            raise UpdateFailed(error_msg)
