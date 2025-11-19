@@ -1,7 +1,6 @@
 """The NerdQAxe+ Miner integration."""
 from __future__ import annotations
 
-import asyncio
 import logging
 import traceback
 from datetime import timedelta
@@ -156,29 +155,33 @@ class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator):
         Raises:
             UpdateFailed: If API communication fails or times out
         """
+        url = f"{self.base_url}{API_SYSTEM_INFO}"
+        timeout = aiohttp.ClientTimeout(total=10)
+
         try:
-            async with asyncio.timeout(10):
-                async with self.session.get(
-                    f"{self.base_url}{API_SYSTEM_INFO}"
-                ) as response:
-                    response.raise_for_status()
-                    data = await response.json()
-                    _LOGGER.debug("Received data from %s: %s", self.host, data)
-                    return data
-        except asyncio.TimeoutError:
+            async with self.session.get(url, timeout=timeout) as response:
+                response.raise_for_status()
+                data = await response.json()
+                _LOGGER.debug("Received data from %s: %s", self.host, data)
+                return data
+        except aiohttp.ClientConnectorError as err:
+            error_msg = f"Cannot connect to miner at {self.host} - device may be offline"
+            _LOGGER.warning("%s: %s", error_msg, err)
+            raise UpdateFailed(error_msg) from err
+        except aiohttp.ServerTimeoutError as err:
             error_msg = f"Timeout connecting to miner at {self.host}"
-            _LOGGER.warning(error_msg)
-            raise UpdateFailed(error_msg)
+            _LOGGER.warning("%s: %s", error_msg, err)
+            raise UpdateFailed(error_msg) from err
         except aiohttp.ClientError as err:
-            error_msg = f"Error communicating with API: {err}"
-            _LOGGER.warning("Error communicating with miner API at %s: %s", self.host, err)
-            raise UpdateFailed(error_msg)
+            error_msg = f"Error communicating with miner API: {type(err).__name__}"
+            _LOGGER.warning("Error communicating with miner at %s: %s - %s", self.host, type(err).__name__, err)
+            raise UpdateFailed(error_msg) from err
         except Exception as err:
-            error_msg = f"Unexpected error: {type(err).__name__}: {err}"
+            error_msg = f"Unexpected error: {type(err).__name__}: {str(err)}"
             _LOGGER.error(
-                "Unexpected error fetching data from %s: %s\n%s",
+                "Unexpected error fetching data from %s: %s",
                 self.host,
                 error_msg,
-                traceback.format_exc()
+                exc_info=True
             )
-            raise UpdateFailed(error_msg)
+            raise UpdateFailed(error_msg) from err
