@@ -1,7 +1,7 @@
 {
   "domain": "nerdqaxe",
   "name": "NerdQAxe+ Miner",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "documentation": "https://github.com/foXaCe/homeassistant-nerdqaxe-addon",
   "issue_tracker": "https://github.com/foXaCe/homeassistant-nerdqaxe-addon/issues",
   "requirements": ["aiohttp>=3.8.0"],
