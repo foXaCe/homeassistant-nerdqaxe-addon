@@ -164,19 +164,23 @@ class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator):
                 data = await response.json()
                 _LOGGER.debug("Received data from %s: %s", self.host, data)
                 return data
-        except aiohttp.ClientConnectorError as err:
-            error_msg = f"Cannot connect to miner at {self.host} - device may be offline"
-            _LOGGER.warning("%s: %s", error_msg, err)
+        except (aiohttp.ClientConnectorError, TimeoutError) as err:
+            # Normal connection errors (device offline/unreachable) - log as debug to avoid log spam
+            error_msg = f"Cannot connect to miner at {self.host} (device may be offline)"
+            _LOGGER.debug("%s: %s", error_msg, type(err).__name__)
             raise UpdateFailed(error_msg) from err
         except aiohttp.ServerTimeoutError as err:
+            # Timeout errors - log as debug since device may be intentionally powered off
             error_msg = f"Timeout connecting to miner at {self.host}"
-            _LOGGER.warning("%s: %s", error_msg, err)
+            _LOGGER.debug("%s: %s", error_msg, err)
             raise UpdateFailed(error_msg) from err
         except aiohttp.ClientError as err:
+            # Other HTTP errors (4xx, 5xx) - log as warning since these are unexpected
             error_msg = f"Error communicating with miner API: {type(err).__name__}"
             _LOGGER.warning("Error communicating with miner at %s: %s - %s", self.host, type(err).__name__, err)
             raise UpdateFailed(error_msg) from err
         except Exception as err:
+            # Truly unexpected errors - log as error with full traceback
             error_msg = f"Unexpected error: {type(err).__name__}: {str(err)}"
             _LOGGER.error(
                 "Unexpected error fetching data from %s: %s",
