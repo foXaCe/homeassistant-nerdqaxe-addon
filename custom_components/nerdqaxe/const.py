@@ -1,6 +1,27 @@
 """Constants for the NerdQAxe+ Miner integration."""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+
+    from .coordinator import NerdQAxeDataUpdateCoordinator
+
 DOMAIN = "nerdqaxe"
+
+# ConfigEntry typé (Platinum)
+type NerdQAxeConfigEntry = ConfigEntry[NerdQAxeRuntimeData]
+
+
+@dataclass(slots=True)
+class NerdQAxeRuntimeData:
+    """Runtime data stored on the config entry."""
+
+    coordinator: NerdQAxeDataUpdateCoordinator
+
 
 # Config
 CONF_HOST = "host"
@@ -14,8 +35,7 @@ DEFAULT_NAME = "NerdQAxe+ Miner"
 API_SYSTEM_INFO = "/api/system/info"
 API_SYSTEM_ASIC = "/api/system/asic"
 API_SYSTEM_RESTART = "/api/system/restart"
-API_OTA_GITHUB = "/api/system/OTA/github"
-API_OTA_WWW_GITHUB = "/api/system/OTA/www/github"
+API_OTA_GITHUB = "/api/system/OTA/github"  # Combined factory OTA (firmware + www)
 
 # Attributes
 ATTR_HASHRATE = "hashRate"
