@@ -1,0 +1,8 @@
+# Default owner for everything
+* @foXaCe
+
+# Custom components
+/custom_components/ @foXaCe
+
+# GitHub configuration
+/.github/ @foXaCe

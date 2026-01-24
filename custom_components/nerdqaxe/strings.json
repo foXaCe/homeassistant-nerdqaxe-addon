@@ -1,0 +1,135 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to NerdQAxe+ Miner",
+        "description": "Enter the IP address or hostname of your NerdQAxe+ Miner.",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "The IP address or hostname of the miner (e.g., 192.168.1.100)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure NerdQAxe+ Miner",
+        "description": "Update the connection settings for your miner.",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "The new IP address or hostname of the miner"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the miner. Please check the IP address and ensure the device is powered on.",
+      "unknown": "An unexpected error occurred. Please check the logs for more information."
+    },
+    "abort": {
+      "already_configured": "This device is already configured.",
+      "reconfigure_successful": "Configuration updated successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "NerdQAxe+ Miner Options",
+        "description": "Configure the integration settings.",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        },
+        "data_description": {
+          "scan_interval": "How often to poll the miner for updates (5-300 seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "hashrate": {
+        "name": "Hashrate"
+      },
+      "hashrate_1m": {
+        "name": "Hashrate (1 min avg)"
+      },
+      "hashrate_10m": {
+        "name": "Hashrate (10 min avg)"
+      },
+      "hashrate_1h": {
+        "name": "Hashrate (1 hour avg)"
+      },
+      "hashrate_1d": {
+        "name": "Hashrate (1 day avg)"
+      },
+      "temperature": {
+        "name": "ASIC Temperature"
+      },
+      "vr_temperature": {
+        "name": "VR Temperature"
+      },
+      "power": {
+        "name": "Power"
+      },
+      "voltage": {
+        "name": "Voltage"
+      },
+      "current": {
+        "name": "Current"
+      },
+      "fan_speed": {
+        "name": "Fan Speed"
+      },
+      "fan_rpm": {
+        "name": "Fan RPM"
+      },
+      "shares_accepted": {
+        "name": "Shares Accepted"
+      },
+      "shares_rejected": {
+        "name": "Shares Rejected"
+      },
+      "best_diff": {
+        "name": "Best Difficulty"
+      },
+      "best_session_diff": {
+        "name": "Best Session Difficulty"
+      },
+      "wifi_rssi": {
+        "name": "WiFi Signal"
+      },
+      "uptime": {
+        "name": "Uptime"
+      },
+      "found_blocks": {
+        "name": "Found Blocks"
+      },
+      "total_found_blocks": {
+        "name": "Total Found Blocks"
+      }
+    },
+    "binary_sensor": {
+      "stratum_connected": {
+        "name": "Stratum Connected"
+      }
+    },
+    "button": {
+      "restart": {
+        "name": "Restart"
+      }
+    },
+    "number": {
+      "frequency": {
+        "name": "ASIC Frequency"
+      },
+      "core_voltage": {
+        "name": "Core Voltage"
+      }
+    },
+    "update": {
+      "firmware": {
+        "name": "Firmware"
+      }
+    }
+  }
+}

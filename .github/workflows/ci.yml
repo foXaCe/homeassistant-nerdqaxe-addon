@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEFAULT_PYTHON: "3.12"
+
+jobs:
+  ruff:
+    name: Ruff Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+
+      - name: Install Ruff
+        run: pip install ruff
+
+      - name: Run Ruff check
+        run: ruff check custom_components/nerdqaxe tests/ --output-format=github
+
+      - name: Run Ruff format check
+        run: ruff format custom_components/nerdqaxe tests/ --check
+
+  mypy:
+    name: Mypy Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+
+      - name: Install dependencies
+        run: |
+          pip install mypy homeassistant aiohttp
+
+      - name: Run Mypy
+        run: mypy custom_components/nerdqaxe --ignore-missing-imports
+
+  pytest:
+    name: Tests & Coverage
+    runs-on: ubuntu-latest
+    needs: [ruff, mypy]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+
+      - name: Install dependencies
+        run: |
+          pip install \
+            pytest \
+            pytest-asyncio \
+            pytest-cov \
+            pytest-homeassistant-custom-component \
+            aiohttp
+
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ \
+            --cov=custom_components/nerdqaxe \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-fail-under=80 \
+            -v
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  all-checks:
+    name: All CI Checks
+    runs-on: ubuntu-latest
+    needs: [ruff, mypy, pytest]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.ruff.result }}" != "success" ]] || \
+             [[ "${{ needs.mypy.result }}" != "success" ]] || \
+             [[ "${{ needs.pytest.result }}" != "success" ]]; then
+            echo "One or more checks failed"
+            exit 1
+          fi
+          echo "All checks passed!"

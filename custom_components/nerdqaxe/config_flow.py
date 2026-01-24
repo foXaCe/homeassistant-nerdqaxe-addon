@@ -1,4 +1,5 @@
 """Config flow for NerdQAxe+ Miner integration."""
+
 from __future__ import annotations
 
 import logging
@@ -6,22 +7,25 @@ from typing import Any
 
 import aiohttp
 import async_timeout
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
-from homeassistant import config_entries
-from homeassistant.const import CONF_NAME
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-
 from .const import (
-    DOMAIN,
+    API_SYSTEM_INFO,
     CONF_HOST,
     CONF_SCAN_INTERVAL,
-    DEFAULT_SCAN_INTERVAL,
     DEFAULT_NAME,
-    API_SYSTEM_INFO,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
 )
+from .exceptions import NerdQAxeConnectionError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +44,8 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         dict: Device information (title, device_model, mac_addr)
 
     Raises:
-        CannotConnect: If connection to miner fails
+        NerdQAxeConnectionError: If connection to miner fails
+
     """
     host = data[CONF_HOST]
     session = async_get_clientsession(hass)
@@ -53,9 +58,12 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
                 response.raise_for_status()
                 result = await response.json()
 
-                _LOGGER.info("Successfully connected to miner at %s (hostname: %s)", host, result.get("hostname", "unknown"))
+                _LOGGER.info(
+                    "Successfully connected to miner at %s (hostname: %s)",
+                    host,
+                    result.get("hostname", "unknown"),
+                )
 
-                # Return info that you want to store in the config entry.
                 return {
                     "title": result.get("hostname", DEFAULT_NAME),
                     "device_model": result.get("deviceModel", "Unknown"),
@@ -63,13 +71,16 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
                 }
     except aiohttp.ClientError as err:
         _LOGGER.error("Could not connect to NerdQAxe+ Miner at %s: %s", host, err)
-        raise CannotConnect
+        raise NerdQAxeConnectionError(f"Cannot connect to miner at {host}") from err
+    except TimeoutError as err:
+        _LOGGER.error("Timeout connecting to NerdQAxe+ Miner at %s", host)
+        raise NerdQAxeConnectionError(f"Timeout connecting to miner at {host}") from err
     except Exception as err:
         _LOGGER.error("Unexpected exception during validation for %s: %s", host, err)
-        raise CannotConnect
+        raise NerdQAxeConnectionError(f"Unexpected error: {err}") from err
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class NerdQAxeConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for NerdQAxe+ Miner integration.
 
     Provides UI-based configuration with miner host validation and
@@ -78,25 +89,31 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        """Initialize the config flow."""
+        self._host: str | None = None
+        self._mac_addr: str | None = None
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the initial setup step.
 
         Args:
             user_input: User-provided configuration data
 
         Returns:
-            FlowResult: Form to show or config entry to create
+            ConfigFlowResult: Form to show or config entry to create
+
         """
         errors: dict[str, str] = {}
 
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
-            except CannotConnect:
+            except NerdQAxeConnectionError:
                 errors["base"] = "cannot_connect"
-            except Exception:  # pylint: disable=broad-except
+            except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
             else:
@@ -118,46 +135,90 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle reconfiguration of the miner.
+
+        Allows changing the host/IP address without removing the config entry.
+
+        Args:
+            user_input: User-provided configuration data
+
+        Returns:
+            ConfigFlowResult: Form to show or reconfigured entry
+
+        """
+        reconfigure_entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            try:
+                info = await validate_input(self.hass, user_input)
+            except NerdQAxeConnectionError:
+                errors["base"] = "cannot_connect"
+            except Exception:
+                _LOGGER.exception("Unexpected exception during reconfigure")
+                errors["base"] = "unknown"
+            else:
+                # Verify it's the same device by checking MAC address
+                if info["mac_addr"] != reconfigure_entry.unique_id:
+                    # Different device - update unique_id
+                    await self.async_set_unique_id(info["mac_addr"])
+                    self._abort_if_unique_id_configured()
+
+                return self.async_update_reload_and_abort(
+                    reconfigure_entry,
+                    data={**reconfigure_entry.data, CONF_HOST: user_input[CONF_HOST]},
+                )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_HOST,
+                        default=reconfigure_entry.data.get(CONF_HOST),
+                    ): str,
+                }
+            ),
+            errors=errors,
+        )
+
     @staticmethod
     @callback
     def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
-    ) -> OptionsFlowHandler:
+        config_entry: ConfigEntry,
+    ) -> OptionsFlow:
         """Get the options flow for this handler.
 
         Args:
             config_entry: Config entry to manage options for
 
         Returns:
-            OptionsFlowHandler: Options flow handler instance
+            OptionsFlow: Options flow handler instance
+
         """
-        return OptionsFlowHandler(config_entry)
+        return NerdQAxeOptionsFlow()
 
 
-class OptionsFlowHandler(config_entries.OptionsFlow):
+class NerdQAxeOptionsFlow(OptionsFlow):
     """Handle options flow for NerdQAxe+ integration.
 
     Allows users to configure scan interval after initial setup.
     """
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow.
-
-        Args:
-            config_entry: Config entry to manage options for
-        """
-        self.config_entry = config_entry
-
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Manage the integration options.
 
         Args:
             user_input: User-provided options data
 
         Returns:
-            FlowResult: Form to show or options entry to create
+            ConfigFlowResult: Form to show or options entry to create
+
         """
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
@@ -175,7 +236,3 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 }
             ),
         )
-
-
-class CannotConnect(Exception):
-    """Exception raised when connection to miner fails."""
