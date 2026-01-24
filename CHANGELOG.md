@@ -5,20 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-01-24
 
 ### Added
-- `diagnostics.py` for debug support with sensitive data redaction
+- Combined factory OTA for firmware updates (firmware + www in single operation)
+- Comprehensive test suite with 80%+ coverage
+- GitHub Actions CI/CD pipeline (lint, test, hassfest, HACS validation)
+- Pre-commit hooks (ruff, codespell)
+- Diagnostics support with sensitive data redaction
 - `runtime_data` pattern for modern Home Assistant architecture
-- `Debouncer` in coordinator to prevent API hammering
-- `_attr_has_entity_name = True` on all entities for proper naming
 - Type alias `NerdQAxeConfigEntry` for strict typing
-- `@dataclass(slots=True)` for `NerdQAxeRuntimeData`
+- `Debouncer` in coordinator to prevent API hammering
 
 ### Changed
-- Migrated from `hass.data[DOMAIN]` to `entry.runtime_data` pattern
-- Improved entity naming to follow Home Assistant conventions
-- Updated coordinator with generic type `DataUpdateCoordinator[dict]`
+- **BREAKING**: Migrated from `hass.data[DOMAIN]` to `entry.runtime_data` pattern
+- Refactored coordinator with typed exceptions (`NerdQAxeApiError`, `NerdQAxeConnectionError`, `NerdQAxeTimeoutError`)
+- Added `__slots__` to all entity classes for memory optimization
+- Added `suggested_display_precision` to numeric sensors
+- Improved entity naming with `_attr_has_entity_name = True`
+- Updated coordinator with generic type `DataUpdateCoordinator[dict[str, Any]]`
+- Return `DeviceInfo` instead of dict for proper typing
+
+### Fixed
+- Manifest keys sorted alphabetically (hassfest compliance)
+- Resolved all mypy type errors
+- Reduced log spam for normal connection errors (debug level)
+- Improved error handling with clearer messages
+- Hashrate sensors device class error
 
 ## [1.3.5] - 2024-01-24
 
