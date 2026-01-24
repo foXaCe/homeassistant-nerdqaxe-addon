@@ -1,30 +1,25 @@
 """Support for NerdQAxe+ Miner button entities."""
+
 from __future__ import annotations
 
 import logging
 
 import aiohttp
 import async_timeout
-
-from homeassistant.components.button import ButtonEntity, ButtonDeviceClass
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.components.button import ButtonDeviceClass, ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import NerdQAxeDataUpdateCoordinator
-from .const import (
-    DOMAIN,
-    API_SYSTEM_RESTART,
-    ATTR_DEVICE_MODEL,
-)
+from . import NerdQAxeConfigEntry, NerdQAxeDataUpdateCoordinator
+from .const import API_SYSTEM_RESTART
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: NerdQAxeConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up NerdQAxe+ Miner button entities from a config entry.
@@ -35,8 +30,9 @@ async def async_setup_entry(
         hass: Home Assistant instance
         entry: Config entry
         async_add_entities: Callback to add entities
+
     """
-    coordinator: NerdQAxeDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data.coordinator
 
     _LOGGER.debug("Setting up button entities for %s", coordinator.host)
 
@@ -45,27 +41,37 @@ async def async_setup_entry(
     ]
 
     async_add_entities(entities)
-    _LOGGER.info("Successfully set up %d button entities for %s", len(entities), coordinator.host)
+    _LOGGER.info(
+        "Successfully set up %d button entities for %s",
+        len(entities),
+        coordinator.host,
+    )
 
 
-class NerdQAxeRestartButton(CoordinatorEntity, ButtonEntity):
+class NerdQAxeRestartButton(
+    CoordinatorEntity[NerdQAxeDataUpdateCoordinator], ButtonEntity
+):
     """Representation of a NerdQAxe+ restart button.
 
     Button entity that sends a restart command to the miner via REST API.
     """
 
+    __slots__ = ()
+
     _attr_device_class = ButtonDeviceClass.RESTART
     _attr_icon = "mdi:restart"
+    _attr_has_entity_name = True
 
     def __init__(self, coordinator: NerdQAxeDataUpdateCoordinator) -> None:
         """Initialize the button.
 
         Args:
             coordinator: Data update coordinator instance
+
         """
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_restart"
-        self._attr_name = "NerdQAxe Restart"
+        self._attr_name = "Restart"
         self._attr_translation_key = "restart"
         self._attr_device_info = coordinator.get_device_info()
 
@@ -76,6 +82,7 @@ class NerdQAxeRestartButton(CoordinatorEntity, ButtonEntity):
 
         Raises:
             aiohttp.ClientError: If restart command fails
+
         """
         _LOGGER.debug("Restart button pressed for %s", self.coordinator.host)
         try:
@@ -84,7 +91,12 @@ class NerdQAxeRestartButton(CoordinatorEntity, ButtonEntity):
                     f"{self.coordinator.base_url}{API_SYSTEM_RESTART}"
                 ) as response:
                     response.raise_for_status()
-                    _LOGGER.info("Restart command sent successfully to %s", self.coordinator.host)
+                    _LOGGER.info(
+                        "Restart command sent successfully to %s",
+                        self.coordinator.host,
+                    )
         except aiohttp.ClientError as err:
-            _LOGGER.error("Failed to restart miner at %s: %s", self.coordinator.host, err)
+            _LOGGER.error(
+                "Failed to restart miner at %s: %s", self.coordinator.host, err
+            )
             raise

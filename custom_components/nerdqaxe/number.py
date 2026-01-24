@@ -1,24 +1,21 @@
 """Support for NerdQAxe+ Miner number entities."""
+
 from __future__ import annotations
 
 import logging
 
 import aiohttp
 import async_timeout
-
 from homeassistant.components.number import NumberEntity, NumberMode
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import NerdQAxeDataUpdateCoordinator
+from . import NerdQAxeConfigEntry, NerdQAxeDataUpdateCoordinator
 from .const import (
-    DOMAIN,
     API_SYSTEM_ASIC,
-    ATTR_DEVICE_MODEL,
-    ATTR_FREQUENCY,
     ATTR_CORE_VOLTAGE,
+    ATTR_FREQUENCY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -26,7 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: NerdQAxeConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up NerdQAxe+ Miner number entities from a config entry.
@@ -37,8 +34,9 @@ async def async_setup_entry(
         hass: Home Assistant instance
         entry: Config entry
         async_add_entities: Callback to add entities
+
     """
-    coordinator: NerdQAxeDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data.coordinator
 
     _LOGGER.debug("Setting up number entities for %s", coordinator.host)
 
@@ -48,15 +46,23 @@ async def async_setup_entry(
     ]
 
     async_add_entities(entities)
-    _LOGGER.info("Successfully set up %d number entities for %s", len(entities), coordinator.host)
+    _LOGGER.info(
+        "Successfully set up %d number entities for %s",
+        len(entities),
+        coordinator.host,
+    )
 
 
-class NerdQAxeFrequencyNumber(CoordinatorEntity, NumberEntity):
+class NerdQAxeFrequencyNumber(
+    CoordinatorEntity[NerdQAxeDataUpdateCoordinator], NumberEntity
+):
     """Representation of NerdQAxe+ ASIC frequency control.
 
     Number entity for adjusting the mining ASIC frequency between 400-575 MHz
     in 25 MHz steps. Changes are applied via REST API.
     """
+
+    __slots__ = ()
 
     _attr_icon = "mdi:sine-wave"
     _attr_mode = NumberMode.BOX
@@ -64,16 +70,18 @@ class NerdQAxeFrequencyNumber(CoordinatorEntity, NumberEntity):
     _attr_native_max_value = 575
     _attr_native_step = 25
     _attr_native_unit_of_measurement = "MHz"
+    _attr_has_entity_name = True
 
     def __init__(self, coordinator: NerdQAxeDataUpdateCoordinator) -> None:
         """Initialize the number entity.
 
         Args:
             coordinator: Data update coordinator instance
+
         """
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_frequency"
-        self._attr_name = "NerdQAxe ASIC Frequency"
+        self._attr_name = "ASIC Frequency"
         self._attr_translation_key = "frequency"
         self._attr_device_info = coordinator.get_device_info()
 
@@ -83,6 +91,7 @@ class NerdQAxeFrequencyNumber(CoordinatorEntity, NumberEntity):
 
         Returns:
             Current frequency in MHz, or None if unavailable
+
         """
         if not self.coordinator.data:
             return None
@@ -96,28 +105,41 @@ class NerdQAxeFrequencyNumber(CoordinatorEntity, NumberEntity):
 
         Raises:
             aiohttp.ClientError: If API command fails
+
         """
-        _LOGGER.debug("Setting frequency to %d MHz on %s", int(value), self.coordinator.host)
+        _LOGGER.debug(
+            "Setting frequency to %d MHz on %s", int(value), self.coordinator.host
+        )
         try:
             async with async_timeout.timeout(10):
                 async with self.coordinator.session.post(
                     f"{self.coordinator.base_url}{API_SYSTEM_ASIC}",
-                    json={"frequency": int(value)}
+                    json={"frequency": int(value)},
                 ) as response:
                     response.raise_for_status()
-                    _LOGGER.info("Frequency set to %d MHz on %s", int(value), self.coordinator.host)
+                    _LOGGER.info(
+                        "Frequency set to %d MHz on %s",
+                        int(value),
+                        self.coordinator.host,
+                    )
                     await self.coordinator.async_request_refresh()
         except aiohttp.ClientError as err:
-            _LOGGER.error("Failed to set frequency on %s: %s", self.coordinator.host, err)
+            _LOGGER.error(
+                "Failed to set frequency on %s: %s", self.coordinator.host, err
+            )
             raise
 
 
-class NerdQAxeCoreVoltageNumber(CoordinatorEntity, NumberEntity):
+class NerdQAxeCoreVoltageNumber(
+    CoordinatorEntity[NerdQAxeDataUpdateCoordinator], NumberEntity
+):
     """Representation of NerdQAxe+ core voltage control.
 
     Number entity for adjusting the ASIC core voltage between 1000-1300 mV
     in 10 mV steps. Changes are applied via REST API.
     """
+
+    __slots__ = ()
 
     _attr_icon = "mdi:flash"
     _attr_mode = NumberMode.BOX
@@ -125,16 +147,18 @@ class NerdQAxeCoreVoltageNumber(CoordinatorEntity, NumberEntity):
     _attr_native_max_value = 1300
     _attr_native_step = 10
     _attr_native_unit_of_measurement = "mV"
+    _attr_has_entity_name = True
 
     def __init__(self, coordinator: NerdQAxeDataUpdateCoordinator) -> None:
         """Initialize the number entity.
 
         Args:
             coordinator: Data update coordinator instance
+
         """
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_core_voltage"
-        self._attr_name = "NerdQAxe Core Voltage"
+        self._attr_name = "Core Voltage"
         self._attr_translation_key = "core_voltage"
         self._attr_device_info = coordinator.get_device_info()
 
@@ -144,6 +168,7 @@ class NerdQAxeCoreVoltageNumber(CoordinatorEntity, NumberEntity):
 
         Returns:
             Current core voltage in mV, or None if unavailable
+
         """
         if not self.coordinator.data:
             return None
@@ -157,17 +182,26 @@ class NerdQAxeCoreVoltageNumber(CoordinatorEntity, NumberEntity):
 
         Raises:
             aiohttp.ClientError: If API command fails
+
         """
-        _LOGGER.debug("Setting core voltage to %d mV on %s", int(value), self.coordinator.host)
+        _LOGGER.debug(
+            "Setting core voltage to %d mV on %s", int(value), self.coordinator.host
+        )
         try:
             async with async_timeout.timeout(10):
                 async with self.coordinator.session.post(
                     f"{self.coordinator.base_url}{API_SYSTEM_ASIC}",
-                    json={"coreVoltage": int(value)}
+                    json={"coreVoltage": int(value)},
                 ) as response:
                     response.raise_for_status()
-                    _LOGGER.info("Core voltage set to %d mV on %s", int(value), self.coordinator.host)
+                    _LOGGER.info(
+                        "Core voltage set to %d mV on %s",
+                        int(value),
+                        self.coordinator.host,
+                    )
                     await self.coordinator.async_request_refresh()
         except aiohttp.ClientError as err:
-            _LOGGER.error("Failed to set core voltage on %s: %s", self.coordinator.host, err)
+            _LOGGER.error(
+                "Failed to set core voltage on %s: %s", self.coordinator.host, err
+            )
             raise
