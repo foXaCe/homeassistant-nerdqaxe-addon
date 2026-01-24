@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import aiohttp
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.debounce import Debouncer
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -78,14 +79,14 @@ class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ),
         )
 
-    def get_device_info(self) -> dict[str, Any]:
+    def get_device_info(self) -> DeviceInfo:
         """Get device information dictionary for entity registration.
 
         Returns a consistent device info dict used by all entities to ensure
         they are grouped under the same device in Home Assistant.
 
         Returns:
-            dict: Device information with identifiers, name, manufacturer, and model
+            DeviceInfo: Device info (identifiers, name, manufacturer, model)
 
         Note:
             TODO(v2.0.0): Use mac_addr instead of host for identifiers to ensure
@@ -95,14 +96,14 @@ class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         """
         # TODO(v2.0.0): Change to {(DOMAIN, self.data.get(ATTR_MAC_ADDR, self.host))}
-        return {
-            "identifiers": {(DOMAIN, self.host)},
-            "name": f"NerdQAxe+ Miner ({self.host})",
-            "manufacturer": "NerdQAxe",
-            "model": self.data.get(ATTR_DEVICE_MODEL, "Unknown")
+        return DeviceInfo(
+            identifiers={(DOMAIN, self.host)},
+            name=f"NerdQAxe+ Miner ({self.host})",
+            manufacturer="NerdQAxe",
+            model=self.data.get(ATTR_DEVICE_MODEL, "Unknown")
             if self.data
             else "Unknown",
-        }
+        )
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch latest data from miner API.
@@ -128,7 +129,7 @@ class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 response.raise_for_status()
                 data = await response.json()
                 _LOGGER.debug("Received data from %s: %s", self.host, data)
-                return data
+                return cast(dict[str, Any], data)
         except aiohttp.ServerTimeoutError as err:
             # Server timeout - must come before TimeoutError (it inherits from it)
             error_msg = f"Timeout connecting to miner at {self.host}"

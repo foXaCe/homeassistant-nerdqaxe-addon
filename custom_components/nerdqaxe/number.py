@@ -95,7 +95,8 @@ class NerdQAxeFrequencyNumber(
         """
         if not self.coordinator.data:
             return None
-        return self.coordinator.data.get(ATTR_FREQUENCY)
+        value: float | None = self.coordinator.data.get(ATTR_FREQUENCY)
+        return value
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new ASIC frequency value.
@@ -172,7 +173,8 @@ class NerdQAxeCoreVoltageNumber(
         """
         if not self.coordinator.data:
             return None
-        return self.coordinator.data.get(ATTR_CORE_VOLTAGE)
+        value: float | None = self.coordinator.data.get(ATTR_CORE_VOLTAGE)
+        return value
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new core voltage value.

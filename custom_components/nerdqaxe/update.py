@@ -224,7 +224,7 @@ class NerdQAxeUpdateEntity(
         """Return the installed version."""
         if not self.coordinator.data:
             return None
-        version = self.coordinator.data.get(ATTR_VERSION, "")
+        version: str = self.coordinator.data.get(ATTR_VERSION, "")
         # Remove 'v' prefix if present
         return version.lstrip("v")
 

@@ -86,4 +86,5 @@ class NerdQAxeStratumSensor(
         """
         if not self.coordinator.data:
             return False
-        return self.coordinator.data.get(ATTR_STRATUM_CONNECTED, False)
+        connected: bool = self.coordinator.data.get(ATTR_STRATUM_CONNECTED, False)
+        return connected
