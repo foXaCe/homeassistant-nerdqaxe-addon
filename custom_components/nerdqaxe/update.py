@@ -1,65 +1,126 @@
 """Support for NerdQAxe+ Miner update entity."""
+
 from __future__ import annotations
 
+from datetime import timedelta
 import logging
 from typing import Any
-import re
-from datetime import timedelta
 
 import aiohttp
 import async_timeout
-
 from homeassistant.components.update import (
+    UpdateDeviceClass,
     UpdateEntity,
     UpdateEntityFeature,
-    UpdateDeviceClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import NerdQAxeDataUpdateCoordinator
+from . import NerdQAxeConfigEntry, NerdQAxeDataUpdateCoordinator
 from .const import (
-    DOMAIN,
     API_OTA_GITHUB,
-    API_OTA_WWW_GITHUB,
     ATTR_DEVICE_MODEL,
     ATTR_VERSION,
+    DOMAIN,
     GITHUB_API_URL,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
+# Greek letter gamma for device model normalization
+GREEK_GAMMA = "\u03b3"
+
+# Factory OTA timeout (firmware + www combined, can be slow)
+OTA_TIMEOUT_SECONDS = 600  # 10 minutes
+
+# Device model to factory filename mapping
+# Format: esp-miner-factory-{model}-v{version}.bin
+# Note: Some models use Greek gamma in their names
+DEVICE_MODEL_MAP = {
+    "NerdAxe": "NerdAxe",
+    "NerdAxeγ": "NerdAxeGamma",  # noqa: RUF001
+    "NerdAxe γ": "NerdAxeGamma",  # noqa: RUF001
+    "NerdAxeGamma": "NerdAxeGamma",
+    "NerdEKO": "NerdEKO",
+    "NerdHaxe-Gamma": "NerdHaxe-Gamma",
+    "NerdHaxeGamma": "NerdHaxe-Gamma",
+    "NerdHaxe γ": "NerdHaxe-Gamma",  # noqa: RUF001
+    "NerdOCTAXE+": "NerdOCTAXE+",
+    "NerdOCTAXE-Gamma": "NerdOCTAXE-Gamma",
+    "NerdOCTAXEγ": "NerdOCTAXE-Gamma",  # noqa: RUF001
+    "NerdOCTAXE γ": "NerdOCTAXE-Gamma",  # noqa: RUF001
+    "NerdQAxe+": "NerdQAxe+",
+    "NerdQAxe++": "NerdQAxe++",
+    "NerdQX": "NerdQX",
+}
+
+
+def normalize_device_model(device_model: str) -> str:
+    """Normalize device model name for factory filename matching.
+
+    Args:
+        device_model: Raw device model from API
+
+    Returns:
+        Normalized model name for factory image filename
+
+    """
+    # Try direct mapping first
+    if device_model in DEVICE_MODEL_MAP:
+        return DEVICE_MODEL_MAP[device_model]
+
+    # Normalize: replace greek gamma, remove spaces
+    normalized = device_model.replace(GREEK_GAMMA, "Gamma").replace(" ", "")
+
+    # Check if normalized version is in map
+    for key, value in DEVICE_MODEL_MAP.items():
+        if key.replace(GREEK_GAMMA, "Gamma").replace(" ", "") == normalized:
+            return value
+
+    # Fallback: return normalized version
+    return normalized
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: NerdQAxeConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up NerdQAxe+ Miner update entity."""
-    coordinator: NerdQAxeDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry.runtime_data.coordinator
 
     entities = [
         NerdQAxeUpdateEntity(coordinator),
-        NerdQAxeWWWUpdateEntity(coordinator),
     ]
 
     async_add_entities(entities)
 
 
-class NerdQAxeUpdateEntity(CoordinatorEntity, UpdateEntity):
-    """Representation of a NerdQAxe+ update entity."""
+class NerdQAxeUpdateEntity(
+    CoordinatorEntity[NerdQAxeDataUpdateCoordinator], UpdateEntity
+):
+    """Representation of a NerdQAxe+ combined firmware update entity.
+
+    Uses factory images that include both firmware and web interface (www).
+    Update is performed via /api/system/OTA/github endpoint which downloads
+    and flashes both partitions in a single operation.
+    """
+
+    __slots__ = ("_download_url", "_latest_version", "_release_notes")
 
     _attr_device_class = UpdateDeviceClass.FIRMWARE
-    _attr_supported_features = UpdateEntityFeature.INSTALL | UpdateEntityFeature.RELEASE_NOTES
+    _attr_supported_features = (
+        UpdateEntityFeature.INSTALL | UpdateEntityFeature.RELEASE_NOTES
+    )
+    _attr_has_entity_name = True
 
     def __init__(self, coordinator: NerdQAxeDataUpdateCoordinator) -> None:
         """Initialize the update entity."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.host}_update"
-        self._attr_name = "NerdQAxe Firmware Update"
+        self._attr_name = "Firmware Update"
         self._attr_translation_key = "update"
         self._latest_version: str | None = None
         self._release_notes: str | None = None
@@ -69,7 +130,9 @@ class NerdQAxeUpdateEntity(CoordinatorEntity, UpdateEntity):
             "identifiers": {(DOMAIN, coordinator.host)},
             "name": f"NerdQAxe+ Miner ({coordinator.host})",
             "manufacturer": "NerdQAxe",
-            "model": coordinator.data.get(ATTR_DEVICE_MODEL, "Unknown") if coordinator.data else "Unknown",
+            "model": coordinator.data.get(ATTR_DEVICE_MODEL, "Unknown")
+            if coordinator.data
+            else "Unknown",
         }
 
     async def async_added_to_hass(self) -> None:
@@ -81,13 +144,11 @@ class NerdQAxeUpdateEntity(CoordinatorEntity, UpdateEntity):
         # Schedule periodic checks every 6 hours
         self.async_on_remove(
             async_track_time_interval(
-                self.hass,
-                self._async_periodic_update,
-                timedelta(hours=6)
+                self.hass, self._async_periodic_update, timedelta(hours=6)
             )
         )
 
-    async def _async_periodic_update(self, now) -> None:
+    async def _async_periodic_update(self, now: Any) -> None:
         """Periodic update to check for new releases."""
         await self._async_check_latest_release()
         self.async_write_ha_state()
@@ -102,28 +163,56 @@ class NerdQAxeUpdateEntity(CoordinatorEntity, UpdateEntity):
 
                     # Filter out pre-releases and rc versions
                     stable_releases = [
-                        r for r in releases
-                        if not r.get("prerelease", False) and "-rc" not in r.get("tag_name", "")
+                        r
+                        for r in releases
+                        if not r.get("prerelease", False)
+                        and "-rc" not in r.get("tag_name", "")
                     ]
 
                     if stable_releases:
                         latest = stable_releases[0]
-                        self._latest_version = latest.get("tag_name", "").lstrip("v")
+                        tag_name = latest.get("tag_name", "")
+                        self._latest_version = tag_name.lstrip("v")
                         self._release_notes = latest.get("body", "")
 
-                        # Find the correct firmware file for this device model
+                        # Find the correct factory firmware file for this device
                         if self.coordinator.data:
-                            device_model = self.coordinator.data.get(ATTR_DEVICE_MODEL, "")
-                            # Normalize device model (remove spaces, replace γ with Gamma)
-                            normalized_model = device_model.replace("γ", "Gamma").replace(" ", "")
-                            expected_filename = f"esp-miner-{normalized_model}.bin"
+                            device_model = self.coordinator.data.get(
+                                ATTR_DEVICE_MODEL, ""
+                            )
+                            normalized_model = normalize_device_model(device_model)
+
+                            # Factory image: esp-miner-factory-{model}-{tag}.bin
+                            expected_filename = (
+                                f"esp-miner-factory-{normalized_model}-{tag_name}.bin"
+                            )
 
                             for asset in latest.get("assets", []):
                                 if asset.get("name") == expected_filename:
-                                    self._download_url = asset.get("browser_download_url")
+                                    self._download_url = asset.get(
+                                        "browser_download_url"
+                                    )
                                     break
+                            else:
+                                # No matching firmware found
+                                available = [
+                                    a.get("name")
+                                    for a in latest.get("assets", [])
+                                    if a.get("name", "").startswith("esp-miner-factory")
+                                ]
+                                _LOGGER.warning(
+                                    "No factory firmware for model '%s' "
+                                    "(expected: %s). Available: %s",
+                                    device_model,
+                                    expected_filename,
+                                    available,
+                                )
 
-                        _LOGGER.debug("Latest firmware version: %s, URL: %s", self._latest_version, self._download_url)
+                        _LOGGER.debug(
+                            "Latest firmware version: %s, URL: %s",
+                            self._latest_version,
+                            self._download_url,
+                        )
 
         except aiohttp.ClientError as err:
             _LOGGER.warning("Failed to check for firmware updates: %s", err)
@@ -148,184 +237,50 @@ class NerdQAxeUpdateEntity(CoordinatorEntity, UpdateEntity):
     def release_url(self) -> str | None:
         """Return the URL for release notes."""
         if self._latest_version:
-            return f"https://github.com/shufps/ESP-Miner-NerdQAxePlus/releases/tag/v{self._latest_version}"
+            return (
+                "https://github.com/shufps/ESP-Miner-NerdQAxePlus/"
+                f"releases/tag/v{self._latest_version}"
+            )
         return None
 
     async def async_release_notes(self) -> str | None:
         """Return the release notes."""
         return self._release_notes
 
-    def _compare_versions(self, v1: str, v2: str) -> int:
-        """
-        Compare two semantic versions.
-        Returns: 1 if v1 > v2, -1 if v1 < v2, 0 if equal
-        """
-        # Remove 'v' prefix if present
-        clean_v1 = v1.lstrip("v")
-        clean_v2 = v2.lstrip("v")
-
-        # Extract version parts (handle both x.y.z and x.y formats)
-        parts1 = [int(p) for p in re.findall(r'\d+', clean_v1)]
-        parts2 = [int(p) for p in re.findall(r'\d+', clean_v2)]
-
-        # Pad with zeros if needed
-        max_len = max(len(parts1), len(parts2))
-        parts1.extend([0] * (max_len - len(parts1)))
-        parts2.extend([0] * (max_len - len(parts2)))
-
-        for p1, p2 in zip(parts1, parts2):
-            if p1 > p2:
-                return 1
-            if p1 < p2:
-                return -1
-
-        return 0
-
     async def async_install(
         self, version: str | None, backup: bool, **kwargs: Any
     ) -> None:
-        """Install an update."""
+        """Install a firmware update.
+
+        Uses the combined factory OTA endpoint which updates both
+        firmware and web interface in a single operation.
+        """
         if not self._download_url:
             _LOGGER.error("No download URL available for firmware update")
             return
 
-        _LOGGER.info("Starting firmware update from %s on %s", self._download_url, self.coordinator.host)
+        _LOGGER.info(
+            "Starting combined firmware update from %s on %s",
+            self._download_url,
+            self.coordinator.host,
+        )
 
         try:
-            async with async_timeout.timeout(300):  # 5 minute timeout for OTA
+            async with async_timeout.timeout(OTA_TIMEOUT_SECONDS):
                 async with self.coordinator.session.post(
                     f"{self.coordinator.base_url}{API_OTA_GITHUB}",
                     json={"url": self._download_url},
-                    headers={"Content-Type": "application/json"}
+                    headers={"Content-Type": "application/json"},
                 ) as response:
                     response.raise_for_status()
                     result = await response.text()
-                    _LOGGER.info("Firmware update initiated successfully on %s: %s", self.coordinator.host, result)
+                    _LOGGER.info(
+                        "Firmware update initiated successfully on %s: %s",
+                        self.coordinator.host,
+                        result,
+                    )
         except aiohttp.ClientError as err:
-            _LOGGER.error("Failed to update firmware on %s: %s", self.coordinator.host, err)
-            raise
-
-
-class NerdQAxeWWWUpdateEntity(CoordinatorEntity, UpdateEntity):
-    """Representation of a NerdQAxe+ WWW update entity."""
-
-    _attr_device_class = UpdateDeviceClass.FIRMWARE
-    _attr_supported_features = UpdateEntityFeature.INSTALL | UpdateEntityFeature.RELEASE_NOTES
-
-    def __init__(self, coordinator: NerdQAxeDataUpdateCoordinator) -> None:
-        """Initialize the update entity."""
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.host}_www_update"
-        self._attr_name = "NerdQAxe WWW Update"
-        self._attr_translation_key = "www_update"
-        self._latest_version: str | None = None
-        self._release_notes: str | None = None
-        self._download_url: str | None = None
-
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, coordinator.host)},
-            "name": f"NerdQAxe+ Miner ({coordinator.host})",
-            "manufacturer": "NerdQAxe",
-            "model": coordinator.data.get(ATTR_DEVICE_MODEL, "Unknown") if coordinator.data else "Unknown",
-        }
-
-    async def async_added_to_hass(self) -> None:
-        """When entity is added to hass."""
-        await super().async_added_to_hass()
-        # Check for latest release immediately when added
-        await self._async_check_latest_release()
-
-        # Schedule periodic checks every 6 hours
-        self.async_on_remove(
-            async_track_time_interval(
-                self.hass,
-                self._async_periodic_update,
-                timedelta(hours=6)
+            _LOGGER.error(
+                "Failed to update firmware on %s: %s", self.coordinator.host, err
             )
-        )
-
-    async def _async_periodic_update(self, now) -> None:
-        """Periodic update to check for new releases."""
-        await self._async_check_latest_release()
-        self.async_write_ha_state()
-
-    async def _async_check_latest_release(self) -> None:
-        """Check GitHub for the latest release."""
-        try:
-            async with async_timeout.timeout(10):
-                async with self.coordinator.session.get(GITHUB_API_URL) as response:
-                    response.raise_for_status()
-                    releases = await response.json()
-
-                    # Filter out pre-releases and rc versions
-                    stable_releases = [
-                        r for r in releases
-                        if not r.get("prerelease", False) and "-rc" not in r.get("tag_name", "")
-                    ]
-
-                    if stable_releases:
-                        latest = stable_releases[0]
-                        self._latest_version = latest.get("tag_name", "").lstrip("v")
-                        self._release_notes = latest.get("body", "")
-
-                        # Find the www.bin file
-                        for asset in latest.get("assets", []):
-                            if asset.get("name") == "www.bin":
-                                self._download_url = asset.get("browser_download_url")
-                                break
-
-                        _LOGGER.debug("Latest WWW version: %s, URL: %s", self._latest_version, self._download_url)
-
-        except aiohttp.ClientError as err:
-            _LOGGER.warning("Failed to check for WWW updates: %s", err)
-        except Exception as err:
-            _LOGGER.error("Unexpected error checking for WWW updates: %s", err)
-
-    @property
-    def installed_version(self) -> str | None:
-        """Return the installed version."""
-        if not self.coordinator.data:
-            return None
-        version = self.coordinator.data.get(ATTR_VERSION, "")
-        # Remove 'v' prefix if present
-        return version.lstrip("v")
-
-    @property
-    def latest_version(self) -> str | None:
-        """Return the latest version."""
-        return self._latest_version
-
-    @property
-    def release_url(self) -> str | None:
-        """Return the URL for release notes."""
-        if self._latest_version:
-            return f"https://github.com/shufps/ESP-Miner-NerdQAxePlus/releases/tag/v{self._latest_version}"
-        return None
-
-    async def async_release_notes(self) -> str | None:
-        """Return the release notes."""
-        return self._release_notes
-
-    async def async_install(
-        self, version: str | None, backup: bool, **kwargs: Any
-    ) -> None:
-        """Install an update."""
-        if not self._download_url:
-            _LOGGER.error("No download URL available for WWW update")
-            return
-
-        _LOGGER.info("Starting WWW update from %s on %s", self._download_url, self.coordinator.host)
-
-        try:
-            async with async_timeout.timeout(300):  # 5 minute timeout for OTA
-                async with self.coordinator.session.post(
-                    f"{self.coordinator.base_url}{API_OTA_WWW_GITHUB}",
-                    json={"url": self._download_url},
-                    headers={"Content-Type": "application/json"}
-                ) as response:
-                    response.raise_for_status()
-                    result = await response.text()
-                    _LOGGER.info("WWW update initiated successfully on %s: %s", self.coordinator.host, result)
-        except aiohttp.ClientError as err:
-            _LOGGER.error("Failed to update WWW on %s: %s", self.coordinator.host, err)
             raise
