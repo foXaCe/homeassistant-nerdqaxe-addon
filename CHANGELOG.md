@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-01-25
+
+### Changed
+- Bump `codecov/codecov-action` from 4 to 5
+- Bump `actions/stale` from 9 to 10
+- Bump `actions/checkout` from 4 to 6
+- Bump `actions/setup-python` from 5 to 6
+- Bump `mikepenz/release-changelog-builder-action` from 5 to 6
+
 ## [2.0.0] - 2026-01-24
 
 ### Added
