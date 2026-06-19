@@ -220,6 +220,79 @@ async def test_reconfigure_cannot_connect(hass: HomeAssistant) -> None:
     assert result2["errors"] == {"base": "cannot_connect"}
 
 
+async def test_reconfigure_unknown_error(hass: HomeAssistant) -> None:
+    """Test reconfigure surfaces unexpected (non-connection) errors as 'unknown'."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="NerdQAxe+ Miner",
+        data={CONF_HOST: MOCK_HOST},
+        unique_id=MOCK_SYSTEM_INFO["macAddr"],
+        version=2,
+    )
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+
+    mock_session = create_mock_session(raise_error=Exception("Unknown error"))
+    with patch(
+        "custom_components.nerdqaxe.config_flow.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_HOST: "192.168.1.200"},
+        )
+
+    assert result2["type"] == FlowResultType.FORM
+    assert result2["errors"] == {"base": "unknown"}
+
+
+async def test_reconfigure_different_device_aborts(hass: HomeAssistant) -> None:
+    """Test reconfiguring toward an already-configured *different* miner aborts.
+
+    Covers the branch where the validated MAC differs from the entry's
+    unique id and that MAC already belongs to another config entry.
+    """
+    other_mac = "11:22:33:44:55:66"
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="NerdQAxe+ Miner",
+        data={CONF_HOST: MOCK_HOST},
+        unique_id=MOCK_SYSTEM_INFO["macAddr"],
+        version=2,
+    )
+    entry.add_to_hass(hass)
+
+    # A second miner already configured with the MAC the reconfigure will report.
+    other_entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Other NerdQAxe+ Miner",
+        data={CONF_HOST: "192.168.1.50"},
+        unique_id=other_mac,
+        version=2,
+    )
+    other_entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+
+    mock_session = create_mock_session(
+        status=200,
+        json_data={**MOCK_SYSTEM_INFO, "macAddr": other_mac},
+    )
+    with patch(
+        "custom_components.nerdqaxe.config_flow.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_HOST: "192.168.1.50"},
+        )
+
+    assert result2["type"] == FlowResultType.ABORT
+    assert result2["reason"] == "already_configured"
+
+
 async def test_options_flow(hass: HomeAssistant) -> None:
     """Test the options flow."""
     entry = MockConfigEntry(
