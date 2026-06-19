@@ -2,28 +2,45 @@
   "config": {
     "step": {
       "user": {
-        "title": "Mineur NerdQAxe+",
-        "description": "Entrez l'adresse IP ou le nom d'hôte de votre mineur NerdQAxe+",
+        "title": "Connexion au mineur NerdQAxe+",
+        "description": "Saisissez l'adresse IP ou le nom d'hôte de votre mineur NerdQAxe+.",
         "data": {
           "host": "Hôte"
+        },
+        "data_description": {
+          "host": "L'adresse IP ou le nom d'hôte du mineur (par ex. 192.168.1.100)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigurer le mineur NerdQAxe+",
+        "description": "Mettez à jour les paramètres de connexion de votre mineur.",
+        "data": {
+          "host": "Hôte"
+        },
+        "data_description": {
+          "host": "La nouvelle adresse IP ou le nouveau nom d'hôte du mineur"
         }
       }
     },
     "error": {
-      "cannot_connect": "Échec de connexion au mineur. Veuillez vérifier l'adresse de l'hôte.",
-      "unknown": "Une erreur inattendue s'est produite"
+      "cannot_connect": "Échec de connexion au mineur. Veuillez vérifier l'adresse IP et vous assurer que l'appareil est sous tension.",
+      "unknown": "Une erreur inattendue s'est produite. Veuillez consulter les journaux pour plus d'informations."
     },
     "abort": {
-      "already_configured": "Ce périphérique est déjà configuré"
+      "already_configured": "Cet appareil est déjà configuré.",
+      "reconfigure_successful": "Configuration mise à jour avec succès."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Options du mineur NerdQAxe+",
-        "description": "Configurer l'intervalle de scan pour les mises à jour des données",
+        "description": "Configurez les paramètres de l'intégration.",
         "data": {
-          "scan_interval": "Intervalle de scan (secondes)"
+          "scan_interval": "Intervalle de mise à jour (secondes)"
+        },
+        "data_description": {
+          "scan_interval": "Fréquence d'interrogation du mineur pour les mises à jour (5 à 300 secondes)"
         }
       }
     }
@@ -84,6 +101,12 @@
       "best_session_difficulty": {
         "name": "Meilleure difficulté de session"
       },
+      "wifi_rssi": {
+        "name": "Signal WiFi"
+      },
+      "uptime": {
+        "name": "Durée de fonctionnement"
+      },
       "found_blocks": {
         "name": "Blocs trouvés (session)"
       },
@@ -96,17 +119,11 @@
       "hostname": {
         "name": "Nom d'hôte"
       },
-      "wifi_rssi": {
-        "name": "Signal WiFi"
-      },
       "frequency": {
         "name": "Fréquence ASIC"
       },
       "version": {
         "name": "Version du firmware"
-      },
-      "uptime": {
-        "name": "Durée de fonctionnement"
       }
     },
     "binary_sensor": {
@@ -130,9 +147,6 @@
     "update": {
       "update": {
         "name": "Mise à jour du firmware"
-      },
-      "www_update": {
-        "name": "Mise à jour WWW"
       }
     }
   }

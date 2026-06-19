@@ -2,28 +2,45 @@
   "config": {
     "step": {
       "user": {
-        "title": "NerdQAxe+ Miner",
-        "description": "Enter the IP address or hostname of your NerdQAxe+ miner",
+        "title": "Connect to NerdQAxe+ Miner",
+        "description": "Enter the IP address or hostname of your NerdQAxe+ Miner.",
         "data": {
           "host": "Host"
+        },
+        "data_description": {
+          "host": "The IP address or hostname of the miner (e.g., 192.168.1.100)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure NerdQAxe+ Miner",
+        "description": "Update the connection settings for your miner.",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "The new IP address or hostname of the miner"
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to the miner. Please check the host address.",
-      "unknown": "An unexpected error occurred"
+      "cannot_connect": "Failed to connect to the miner. Please check the IP address and ensure the device is powered on.",
+      "unknown": "An unexpected error occurred. Please check the logs for more information."
     },
     "abort": {
-      "already_configured": "This device is already configured"
+      "already_configured": "This device is already configured.",
+      "reconfigure_successful": "Configuration updated successfully."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "NerdQAxe+ Miner Options",
-        "description": "Configure scan interval for data updates",
+        "description": "Configure the integration settings.",
         "data": {
-          "scan_interval": "Scan Interval (seconds)"
+          "scan_interval": "Update interval (seconds)"
+        },
+        "data_description": {
+          "scan_interval": "How often to poll the miner for updates (5-300 seconds)"
         }
       }
     }
@@ -34,19 +51,19 @@
         "name": "Hashrate"
       },
       "hashrate_1m": {
-        "name": "Hashrate 1m"
+        "name": "Hashrate (1 min avg)"
       },
       "hashrate_10m": {
-        "name": "Hashrate 10m"
+        "name": "Hashrate (10 min avg)"
       },
       "hashrate_1h": {
-        "name": "Hashrate 1h"
+        "name": "Hashrate (1 hour avg)"
       },
       "hashrate_1d": {
-        "name": "Hashrate 1d"
+        "name": "Hashrate (1 day avg)"
       },
       "temperature": {
-        "name": "Chip Temperature"
+        "name": "ASIC Temperature"
       },
       "vr_temperature": {
         "name": "VR Temperature"
@@ -84,8 +101,14 @@
       "best_session_difficulty": {
         "name": "Best Session Difficulty"
       },
+      "wifi_rssi": {
+        "name": "WiFi Signal"
+      },
+      "uptime": {
+        "name": "Uptime"
+      },
       "found_blocks": {
-        "name": "Found Blocks (Session)"
+        "name": "Found Blocks"
       },
       "total_found_blocks": {
         "name": "Total Found Blocks"
@@ -96,17 +119,11 @@
       "hostname": {
         "name": "Hostname"
       },
-      "wifi_rssi": {
-        "name": "WiFi RSSI"
-      },
       "frequency": {
         "name": "ASIC Frequency"
       },
       "version": {
         "name": "Firmware Version"
-      },
-      "uptime": {
-        "name": "Uptime"
       }
     },
     "binary_sensor": {
@@ -130,9 +147,6 @@
     "update": {
       "update": {
         "name": "Firmware Update"
-      },
-      "www_update": {
-        "name": "WWW Update"
       }
     }
   }
