@@ -9,6 +9,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.nerdqaxe.const import DOMAIN
+from custom_components.nerdqaxe.exceptions import NerdQAxeApiError
 
 from .conftest import (
     MOCK_ASIC_DATA,
@@ -100,7 +101,7 @@ async def test_button_press_failure(
         assert len(restart_button) > 0
 
         # Press the button - should raise error
-        with pytest.raises(aiohttp.ClientError):
+        with pytest.raises(NerdQAxeApiError):
             await hass.services.async_call(
                 "button",
                 "press",

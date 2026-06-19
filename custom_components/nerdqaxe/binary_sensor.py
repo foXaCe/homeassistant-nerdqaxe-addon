@@ -22,6 +22,9 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# All entities read from a single coordinator; updates are not per-entity.
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -76,7 +79,7 @@ class NerdQAxeStratumSensor(
 
         """
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.host}_stratum_connected"
+        self._attr_unique_id = f"{coordinator.unique_id_base}_stratum_connected"
         self._attr_name = "Stratum Connected"
         self._attr_translation_key = "stratum_connected"
         self._attr_device_info = coordinator.get_device_info()

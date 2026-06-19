@@ -17,8 +17,12 @@ from .const import (
     ATTR_CORE_VOLTAGE,
     ATTR_FREQUENCY,
 )
+from .exceptions import NerdQAxeApiError
 
 _LOGGER = logging.getLogger(__name__)
+
+# All entities read from a single coordinator; updates are not per-entity.
+PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
@@ -80,7 +84,7 @@ class NerdQAxeFrequencyNumber(
 
         """
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.host}_frequency"
+        self._attr_unique_id = f"{coordinator.unique_id_base}_frequency"
         self._attr_name = "ASIC Frequency"
         self._attr_translation_key = "frequency"
         self._attr_device_info = coordinator.get_device_info()
@@ -105,30 +109,31 @@ class NerdQAxeFrequencyNumber(
             value: New frequency in MHz (400-575, step 25)
 
         Raises:
-            aiohttp.ClientError: If API command fails
+            NerdQAxeApiError: If the API command fails
 
         """
         _LOGGER.debug(
             "Setting frequency to %d MHz on %s", int(value), self.coordinator.host
         )
         try:
-            async with async_timeout.timeout(10):
-                async with self.coordinator.session.post(
+            async with (
+                async_timeout.timeout(10),
+                self.coordinator.session.post(
                     f"{self.coordinator.base_url}{API_SYSTEM_ASIC}",
                     json={"frequency": int(value)},
-                ) as response:
-                    response.raise_for_status()
-                    _LOGGER.info(
-                        "Frequency set to %d MHz on %s",
-                        int(value),
-                        self.coordinator.host,
-                    )
-                    await self.coordinator.async_request_refresh()
-        except aiohttp.ClientError as err:
-            _LOGGER.error(
-                "Failed to set frequency on %s: %s", self.coordinator.host, err
-            )
-            raise
+                ) as response,
+            ):
+                response.raise_for_status()
+                _LOGGER.info(
+                    "Frequency set to %d MHz on %s",
+                    int(value),
+                    self.coordinator.host,
+                )
+                await self.coordinator.async_request_refresh()
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise NerdQAxeApiError(
+                f"Failed to set frequency on {self.coordinator.host}"
+            ) from err
 
 
 class NerdQAxeCoreVoltageNumber(
@@ -158,7 +163,7 @@ class NerdQAxeCoreVoltageNumber(
 
         """
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.host}_core_voltage"
+        self._attr_unique_id = f"{coordinator.unique_id_base}_core_voltage"
         self._attr_name = "Core Voltage"
         self._attr_translation_key = "core_voltage"
         self._attr_device_info = coordinator.get_device_info()
@@ -183,27 +188,28 @@ class NerdQAxeCoreVoltageNumber(
             value: New voltage in mV (1000-1300, step 10)
 
         Raises:
-            aiohttp.ClientError: If API command fails
+            NerdQAxeApiError: If the API command fails
 
         """
         _LOGGER.debug(
             "Setting core voltage to %d mV on %s", int(value), self.coordinator.host
         )
         try:
-            async with async_timeout.timeout(10):
-                async with self.coordinator.session.post(
+            async with (
+                async_timeout.timeout(10),
+                self.coordinator.session.post(
                     f"{self.coordinator.base_url}{API_SYSTEM_ASIC}",
                     json={"coreVoltage": int(value)},
-                ) as response:
-                    response.raise_for_status()
-                    _LOGGER.info(
-                        "Core voltage set to %d mV on %s",
-                        int(value),
-                        self.coordinator.host,
-                    )
-                    await self.coordinator.async_request_refresh()
-        except aiohttp.ClientError as err:
-            _LOGGER.error(
-                "Failed to set core voltage on %s: %s", self.coordinator.host, err
-            )
-            raise
+                ) as response,
+            ):
+                response.raise_for_status()
+                _LOGGER.info(
+                    "Core voltage set to %d mV on %s",
+                    int(value),
+                    self.coordinator.host,
+                )
+                await self.coordinator.async_request_refresh()
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise NerdQAxeApiError(
+                f"Failed to set core voltage on {self.coordinator.host}"
+            ) from err

@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
 
     from .coordinator import NerdQAxeDataUpdateCoordinator
 
-DOMAIN = "nerdqaxe"
+DOMAIN: Final = "nerdqaxe"
 
 # ConfigEntry typé (Platinum)
 type NerdQAxeConfigEntry = ConfigEntry[NerdQAxeRuntimeData]
@@ -24,59 +24,55 @@ class NerdQAxeRuntimeData:
 
 
 # Config
-CONF_HOST = "host"
-CONF_SCAN_INTERVAL = "scan_interval"
+CONF_HOST: Final = "host"
+CONF_SCAN_INTERVAL: Final = "scan_interval"
 
 # Defaults
-DEFAULT_SCAN_INTERVAL = 30
-DEFAULT_NAME = "NerdQAxe+ Miner"
+DEFAULT_SCAN_INTERVAL: Final = 30
+DEFAULT_NAME: Final = "NerdQAxe+ Miner"
+MIN_SCAN_INTERVAL: Final = 5
+MAX_SCAN_INTERVAL: Final = 300
 
 # API Endpoints
-API_SYSTEM_INFO = "/api/system/info"
-API_SYSTEM_ASIC = "/api/system/asic"
-API_SYSTEM_RESTART = "/api/system/restart"
-API_OTA_GITHUB = "/api/system/OTA/github"  # Combined factory OTA (firmware + www)
+API_SYSTEM_INFO: Final = "/api/system/info"
+API_SYSTEM_ASIC: Final = "/api/system/asic"
+API_SYSTEM_RESTART: Final = "/api/system/restart"
+API_OTA_GITHUB: Final = "/api/system/OTA/github"  # Combined factory OTA (fw + www)
 
 # Attributes
-ATTR_HASHRATE = "hashRate"
-ATTR_HASHRATE_1M = "hashRate_1m"
-ATTR_HASHRATE_10M = "hashRate_10m"
-ATTR_HASHRATE_1H = "hashRate_1h"
-ATTR_HASHRATE_1D = "hashRate_1d"
-ATTR_TEMP = "temp"
-ATTR_VR_TEMP = "vrTemp"
-ATTR_POWER = "power"
-ATTR_VOLTAGE = "voltage"
-ATTR_CURRENT = "current"
-ATTR_FAN_SPEED = "fanspeed"
-ATTR_FAN_RPM = "fanrpm"
-ATTR_SHARES_ACCEPTED = "sharesAccepted"
-ATTR_SHARES_REJECTED = "sharesRejected"
-ATTR_BEST_DIFF = "bestDiff"
-ATTR_BEST_SESSION_DIFF = "bestSessionDiff"
+ATTR_HASHRATE: Final = "hashRate"
+ATTR_HASHRATE_1M: Final = "hashRate_1m"
+ATTR_HASHRATE_10M: Final = "hashRate_10m"
+ATTR_HASHRATE_1H: Final = "hashRate_1h"
+ATTR_HASHRATE_1D: Final = "hashRate_1d"
+ATTR_TEMP: Final = "temp"
+ATTR_VR_TEMP: Final = "vrTemp"
+ATTR_POWER: Final = "power"
+ATTR_VOLTAGE: Final = "voltage"
+ATTR_CURRENT: Final = "current"
+ATTR_FAN_SPEED: Final = "fanspeed"
+ATTR_FAN_RPM: Final = "fanrpm"
+ATTR_SHARES_ACCEPTED: Final = "sharesAccepted"
+ATTR_SHARES_REJECTED: Final = "sharesRejected"
+ATTR_BEST_DIFF: Final = "bestDiff"
+ATTR_BEST_SESSION_DIFF: Final = "bestSessionDiff"
 # Legacy flat field, kept for backward compatibility. Modern firmware exposes
 # the connection state inside the nested ``stratum.pools[].connected`` structure.
-ATTR_STRATUM_CONNECTED = "isStratumConnected"
-ATTR_STRATUM = "stratum"
-ATTR_STRATUM_POOLS = "pools"
-ATTR_POOL_CONNECTED = "connected"
-ATTR_DEVICE_MODEL = "deviceModel"
-ATTR_HOSTNAME = "hostname"
-ATTR_MAC_ADDR = "macAddr"
-ATTR_IP_ADDR = "hostip"
-ATTR_WIFI_RSSI = "wifiRSSI"
-ATTR_FOUND_BLOCKS = "foundBlocks"
-ATTR_TOTAL_FOUND_BLOCKS = "totalFoundBlocks"
-ATTR_CORE_VOLTAGE = "coreVoltage"
-ATTR_CORE_VOLTAGE_ACTUAL = "coreVoltageActual"
-ATTR_FREQUENCY = "frequency"
-ATTR_VERSION = "version"
-ATTR_UPTIME = "uptimeSeconds"
+ATTR_STRATUM_CONNECTED: Final = "isStratumConnected"
+ATTR_STRATUM: Final = "stratum"
+ATTR_STRATUM_POOLS: Final = "pools"
+ATTR_POOL_CONNECTED: Final = "connected"
+ATTR_DEVICE_MODEL: Final = "deviceModel"
+ATTR_HOSTNAME: Final = "hostname"
+ATTR_WIFI_RSSI: Final = "wifiRSSI"
+ATTR_FOUND_BLOCKS: Final = "foundBlocks"
+ATTR_TOTAL_FOUND_BLOCKS: Final = "totalFoundBlocks"
+ATTR_CORE_VOLTAGE: Final = "coreVoltage"
+ATTR_CORE_VOLTAGE_ACTUAL: Final = "coreVoltageActual"
+ATTR_FREQUENCY: Final = "frequency"
+ATTR_VERSION: Final = "version"
+ATTR_UPTIME: Final = "uptimeSeconds"
 
 # GitHub
-GITHUB_REPO = "shufps/ESP-Miner-NerdQAxePlus"
-GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/releases"
-
-# Services
-SERVICE_RESTART = "restart"
-SERVICE_UPDATE_FIRMWARE = "update_firmware"
+GITHUB_REPO: Final = "shufps/ESP-Miner-NerdQAxePlus"
+GITHUB_API_URL: Final = f"https://api.github.com/repos/{GITHUB_REPO}/releases"

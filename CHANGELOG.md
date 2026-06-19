@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Entities and the device are now identified by the miner **MAC address**
+  instead of its IP/host, so they survive IP changes. Existing setups are
+  migrated automatically (config entry v1 → v2) — no entities or history are
+  lost. Device info now also exposes `sw_version`, `configuration_url` and the
+  network MAC connection
+- Control actions (restart, ASIC frequency, core voltage) now surface a clear
+  error in Home Assistant when the miner rejects the command, instead of a raw
+  traceback
+
 ### Fixed
 - Firmware update no longer reports a false failure. The miner now runs the
   factory OTA asynchronously (`POST` returns `202 Accepted` and the device

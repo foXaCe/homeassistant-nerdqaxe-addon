@@ -5,6 +5,7 @@ from unittest.mock import patch
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -168,3 +169,78 @@ async def test_migrate_entry_future_version(
     # Downgrade should fail
     result = await async_migrate_entry(hass, entry)
     assert result is False
+
+
+async def test_migrate_entry_v1_to_v2_rekeys_unique_ids(
+    hass: HomeAssistant,
+) -> None:
+    """v1->v2 migration re-keys host-based ids to MAC-based ids."""
+    from custom_components.nerdqaxe import async_migrate_entry
+
+    mac = "AA:BB:CC:DD:EE:FF"
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: MOCK_HOST},
+        unique_id=mac,
+        version=1,
+    )
+    entry.add_to_hass(hass)
+
+    ent_reg = er.async_get(hass)
+    dev_reg = dr.async_get(hass)
+
+    # Device + entity registered under the legacy host-based scheme
+    device = dev_reg.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, MOCK_HOST)},
+    )
+    registry_entry = ent_reg.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        f"{MOCK_HOST}_hashrate",
+        config_entry=entry,
+        device_id=device.id,
+    )
+
+    assert await async_migrate_entry(hass, entry) is True
+
+    # Entity unique_id re-keyed to the MAC
+    migrated = ent_reg.async_get(registry_entry.entity_id)
+    assert migrated is not None
+    assert migrated.unique_id == f"{mac}_hashrate"
+
+    # Device re-keyed to the MAC
+    assert dev_reg.async_get_device(identifiers={(DOMAIN, mac)}) is not None
+    assert dev_reg.async_get_device(identifiers={(DOMAIN, MOCK_HOST)}) is None
+
+    # Entry version bumped
+    assert entry.version == 2
+
+
+async def test_migrate_entry_v1_to_v2_idempotent(
+    hass: HomeAssistant,
+) -> None:
+    """Re-running migration on already-MAC-based ids is a safe no-op."""
+    from custom_components.nerdqaxe import async_migrate_entry
+
+    mac = "AA:BB:CC:DD:EE:FF"
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_HOST: MOCK_HOST},
+        unique_id=mac,
+        version=1,
+    )
+    entry.add_to_hass(hass)
+
+    ent_reg = er.async_get(hass)
+    registry_entry = ent_reg.async_get_or_create(
+        "sensor", DOMAIN, f"{mac}_hashrate", config_entry=entry
+    )
+
+    assert await async_migrate_entry(hass, entry) is True
+
+    # Unchanged: already on the MAC-based scheme
+    migrated = ent_reg.async_get(registry_entry.entity_id)
+    assert migrated is not None
+    assert migrated.unique_id == f"{mac}_hashrate"
+    assert entry.version == 2

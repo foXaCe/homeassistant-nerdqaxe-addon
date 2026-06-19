@@ -95,10 +95,10 @@
       "shares_rejected": {
         "name": "Shares Rejected"
       },
-      "best_diff": {
+      "best_difficulty": {
         "name": "Best Difficulty"
       },
-      "best_session_diff": {
+      "best_session_difficulty": {
         "name": "Best Session Difficulty"
       },
       "wifi_rssi": {
@@ -112,6 +112,18 @@
       },
       "total_found_blocks": {
         "name": "Total Found Blocks"
+      },
+      "device_model": {
+        "name": "Device Model"
+      },
+      "hostname": {
+        "name": "Hostname"
+      },
+      "frequency": {
+        "name": "ASIC Frequency"
+      },
+      "version": {
+        "name": "Firmware Version"
       }
     },
     "binary_sensor": {
@@ -133,8 +145,8 @@
       }
     },
     "update": {
-      "firmware": {
-        "name": "Firmware"
+      "update": {
+        "name": "Firmware Update"
       }
     }
   }

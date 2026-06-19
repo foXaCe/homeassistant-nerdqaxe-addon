@@ -1,9 +1,10 @@
 """Test the NerdQAxe+ Miner coordinator."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import aiohttp
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.helpers.update_coordinator import UpdateFailed
 import pytest
 
@@ -16,6 +17,8 @@ from .conftest import (
     MOCK_SYSTEM_INFO,
     create_mock_session,
 )
+
+MOCK_MAC = "AA:BB:CC:DD:EE:FF"
 
 
 @pytest.fixture
@@ -169,3 +172,36 @@ async def test_coordinator_get_device_info_missing_model(
 
     # Should use "Unknown" when deviceModel is not in data
     assert device_info["model"] == "Unknown"
+
+
+async def test_coordinator_unique_id_base_uses_mac(
+    hass: HomeAssistant, mock_coordinator: NerdQAxeDataUpdateCoordinator
+) -> None:
+    """unique_id_base returns the config entry unique id (MAC) when present."""
+    mock_coordinator.config_entry = MagicMock(unique_id=MOCK_MAC)
+
+    assert mock_coordinator.unique_id_base == MOCK_MAC
+
+
+async def test_coordinator_unique_id_base_falls_back_to_host(
+    hass: HomeAssistant, mock_coordinator: NerdQAxeDataUpdateCoordinator
+) -> None:
+    """unique_id_base falls back to the host when no unique id is set."""
+    mock_coordinator.config_entry = None
+
+    assert mock_coordinator.unique_id_base == MOCK_HOST
+
+
+async def test_coordinator_device_info_mac_based(
+    hass: HomeAssistant, mock_coordinator: NerdQAxeDataUpdateCoordinator
+) -> None:
+    """Device info is keyed on the MAC and exposes rich metadata."""
+    mock_coordinator.config_entry = MagicMock(unique_id=MOCK_MAC)
+    mock_coordinator.data = {**MOCK_SYSTEM_INFO, **MOCK_ASIC_DATA}
+
+    device_info = mock_coordinator.get_device_info()
+
+    assert (DOMAIN, MOCK_MAC) in device_info["identifiers"]
+    assert (CONNECTION_NETWORK_MAC, MOCK_MAC) in device_info["connections"]
+    assert device_info["sw_version"] == MOCK_SYSTEM_INFO["version"].lstrip("v")
+    assert device_info["configuration_url"] == f"http://{MOCK_HOST}"
