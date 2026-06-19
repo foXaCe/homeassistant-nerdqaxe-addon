@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 import logging
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
+    SensorEntityDescription,
     SensorStateClass,
 )
 from homeassistant.const import (
@@ -18,6 +22,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NerdQAxeConfigEntry, NerdQAxeDataUpdateCoordinator
@@ -50,10 +55,216 @@ from .const import (
     ATTR_WIFI_RSSI,
 )
 
-# Used for version string cleanup in native_value
-# (kept explicit reference for clarity)
-
 _LOGGER = logging.getLogger(__name__)
+
+# Custom units not provided by Home Assistant constants
+UNIT_GIGAHASH_PER_SECOND = "GH/s"
+UNIT_REVOLUTIONS_PER_MINUTE = "RPM"
+UNIT_MEGAHERTZ = "MHz"
+UNIT_DECIBEL_MILLIWATT = "dBm"
+
+
+def _clean_version(data: dict[str, Any]) -> StateType:
+    """Return the firmware version without its leading ``v`` prefix."""
+    version = data.get(ATTR_VERSION)
+    if isinstance(version, str):
+        return version.lstrip("v")
+    return version
+
+
+@dataclass(frozen=True, kw_only=True)
+class NerdQAxeSensorEntityDescription(SensorEntityDescription):
+    """Describes a NerdQAxe+ sensor entity.
+
+    ``value_fn`` extracts the native value from the coordinator data dict, which
+    keeps all per-sensor logic declarative and in one place.
+    """
+
+    value_fn: Callable[[dict[str, Any]], StateType]
+
+
+SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
+    # Hashrate
+    NerdQAxeSensorEntityDescription(
+        key="hashrate",
+        icon="mdi:speedometer",
+        native_unit_of_measurement=UNIT_GIGAHASH_PER_SECOND,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.get(ATTR_HASHRATE),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="hashrate_1m",
+        icon="mdi:speedometer",
+        native_unit_of_measurement=UNIT_GIGAHASH_PER_SECOND,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.get(ATTR_HASHRATE_1M),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="hashrate_10m",
+        icon="mdi:speedometer",
+        native_unit_of_measurement=UNIT_GIGAHASH_PER_SECOND,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.get(ATTR_HASHRATE_10M),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="hashrate_1h",
+        icon="mdi:speedometer",
+        native_unit_of_measurement=UNIT_GIGAHASH_PER_SECOND,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.get(ATTR_HASHRATE_1H),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="hashrate_1d",
+        icon="mdi:speedometer",
+        native_unit_of_measurement=UNIT_GIGAHASH_PER_SECOND,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.get(ATTR_HASHRATE_1D),
+    ),
+    # Temperature
+    NerdQAxeSensorEntityDescription(
+        key="temperature",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda data: data.get(ATTR_TEMP),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="vr_temperature",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
+        value_fn=lambda data: data.get(ATTR_VR_TEMP),
+    ),
+    # Power
+    NerdQAxeSensorEntityDescription(
+        key="power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.get(ATTR_POWER),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="voltage",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.get(ATTR_VOLTAGE),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="current",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda data: data.get(ATTR_CURRENT),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="core_voltage",
+        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=lambda data: data.get(ATTR_CORE_VOLTAGE),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="core_voltage_actual",
+        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=lambda data: data.get(ATTR_CORE_VOLTAGE_ACTUAL),
+    ),
+    # Fan
+    NerdQAxeSensorEntityDescription(
+        key="fan_speed",
+        icon="mdi:fan",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get(ATTR_FAN_SPEED),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="fan_rpm",
+        icon="mdi:fan",
+        native_unit_of_measurement=UNIT_REVOLUTIONS_PER_MINUTE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get(ATTR_FAN_RPM),
+    ),
+    # Mining statistics
+    NerdQAxeSensorEntityDescription(
+        key="shares_accepted",
+        icon="mdi:check-circle",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda data: data.get(ATTR_SHARES_ACCEPTED),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="shares_rejected",
+        icon="mdi:close-circle",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda data: data.get(ATTR_SHARES_REJECTED),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="best_difficulty",
+        icon="mdi:trophy",
+        value_fn=lambda data: data.get(ATTR_BEST_DIFF),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="best_session_difficulty",
+        icon="mdi:trophy-outline",
+        value_fn=lambda data: data.get(ATTR_BEST_SESSION_DIFF),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="found_blocks",
+        icon="mdi:cube",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda data: data.get(ATTR_FOUND_BLOCKS),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="total_found_blocks",
+        icon="mdi:cube-outline",
+        state_class=SensorStateClass.TOTAL,
+        value_fn=lambda data: data.get(ATTR_TOTAL_FOUND_BLOCKS),
+    ),
+    # Device information
+    NerdQAxeSensorEntityDescription(
+        key="device_model",
+        icon="mdi:chip",
+        value_fn=lambda data: data.get(ATTR_DEVICE_MODEL),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="hostname",
+        icon="mdi:server",
+        value_fn=lambda data: data.get(ATTR_HOSTNAME),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="wifi_rssi",
+        icon="mdi:wifi",
+        native_unit_of_measurement=UNIT_DECIBEL_MILLIWATT,
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get(ATTR_WIFI_RSSI),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="frequency",
+        icon="mdi:sine-wave",
+        native_unit_of_measurement=UNIT_MEGAHERTZ,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get(ATTR_FREQUENCY),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="version",
+        icon="mdi:information-outline",
+        value_fn=_clean_version,
+    ),
+)
 
 
 async def async_setup_entry(
@@ -74,299 +285,50 @@ async def async_setup_entry(
     """
     coordinator = entry.runtime_data.coordinator
 
-    _LOGGER.debug("Setting up %d sensor entities for %s", 26, coordinator.host)
-
-    entities = [
-        # Hashrate sensors
-        NerdQAxeSensor(
-            coordinator,
-            "hashrate",
-            "Hashrate",
-            ATTR_HASHRATE,
-            icon="mdi:speedometer",
-            unit="GH/s",
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=2,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "hashrate_1m",
-            "Hashrate 1m",
-            ATTR_HASHRATE_1M,
-            icon="mdi:speedometer",
-            unit="GH/s",
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=2,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "hashrate_10m",
-            "Hashrate 10m",
-            ATTR_HASHRATE_10M,
-            icon="mdi:speedometer",
-            unit="GH/s",
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=2,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "hashrate_1h",
-            "Hashrate 1h",
-            ATTR_HASHRATE_1H,
-            icon="mdi:speedometer",
-            unit="GH/s",
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=2,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "hashrate_1d",
-            "Hashrate 1d",
-            ATTR_HASHRATE_1D,
-            icon="mdi:speedometer",
-            unit="GH/s",
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=2,
-        ),
-        # Temperature sensors
-        NerdQAxeSensor(
-            coordinator,
-            "temperature",
-            "Chip Temperature",
-            ATTR_TEMP,
-            unit=UnitOfTemperature.CELSIUS,
-            device_class=SensorDeviceClass.TEMPERATURE,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=1,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "vr_temperature",
-            "VR Temperature",
-            ATTR_VR_TEMP,
-            unit=UnitOfTemperature.CELSIUS,
-            device_class=SensorDeviceClass.TEMPERATURE,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=1,
-        ),
-        # Power sensors
-        NerdQAxeSensor(
-            coordinator,
-            "power",
-            "Power",
-            ATTR_POWER,
-            unit=UnitOfPower.WATT,
-            device_class=SensorDeviceClass.POWER,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=2,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "voltage",
-            "Voltage",
-            ATTR_VOLTAGE,
-            unit=UnitOfElectricPotential.VOLT,
-            device_class=SensorDeviceClass.VOLTAGE,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=2,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "current",
-            "Current",
-            ATTR_CURRENT,
-            unit=UnitOfElectricCurrent.AMPERE,
-            device_class=SensorDeviceClass.CURRENT,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=2,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "core_voltage",
-            "Core Voltage",
-            ATTR_CORE_VOLTAGE,
-            unit=UnitOfElectricPotential.MILLIVOLT,
-            device_class=SensorDeviceClass.VOLTAGE,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=0,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "core_voltage_actual",
-            "Core Voltage Actual",
-            ATTR_CORE_VOLTAGE_ACTUAL,
-            unit=UnitOfElectricPotential.MILLIVOLT,
-            device_class=SensorDeviceClass.VOLTAGE,
-            state_class=SensorStateClass.MEASUREMENT,
-            suggested_display_precision=0,
-        ),
-        # Fan sensors
-        NerdQAxeSensor(
-            coordinator,
-            "fan_speed",
-            "Fan Speed",
-            ATTR_FAN_SPEED,
-            icon="mdi:fan",
-            unit=PERCENTAGE,
-            state_class=SensorStateClass.MEASUREMENT,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "fan_rpm",
-            "Fan RPM",
-            ATTR_FAN_RPM,
-            icon="mdi:fan",
-            unit="RPM",
-            state_class=SensorStateClass.MEASUREMENT,
-        ),
-        # Mining stats
-        NerdQAxeSensor(
-            coordinator,
-            "shares_accepted",
-            "Shares Accepted",
-            ATTR_SHARES_ACCEPTED,
-            icon="mdi:check-circle",
-            state_class=SensorStateClass.TOTAL_INCREASING,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "shares_rejected",
-            "Shares Rejected",
-            ATTR_SHARES_REJECTED,
-            icon="mdi:close-circle",
-            state_class=SensorStateClass.TOTAL_INCREASING,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "best_difficulty",
-            "Best Difficulty",
-            ATTR_BEST_DIFF,
-            icon="mdi:trophy",
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "best_session_difficulty",
-            "Best Session Difficulty",
-            ATTR_BEST_SESSION_DIFF,
-            icon="mdi:trophy-outline",
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "found_blocks",
-            "Found Blocks (Session)",
-            ATTR_FOUND_BLOCKS,
-            icon="mdi:cube",
-            state_class=SensorStateClass.TOTAL_INCREASING,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "total_found_blocks",
-            "Total Found Blocks",
-            ATTR_TOTAL_FOUND_BLOCKS,
-            icon="mdi:cube-outline",
-            state_class=SensorStateClass.TOTAL,
-        ),
-        # Device info
-        NerdQAxeSensor(
-            coordinator,
-            "device_model",
-            "Device Model",
-            ATTR_DEVICE_MODEL,
-            icon="mdi:chip",
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "hostname",
-            "Hostname",
-            ATTR_HOSTNAME,
-            icon="mdi:server",
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "wifi_rssi",
-            "WiFi RSSI",
-            ATTR_WIFI_RSSI,
-            icon="mdi:wifi",
-            unit="dBm",
-            device_class=SensorDeviceClass.SIGNAL_STRENGTH,
-            state_class=SensorStateClass.MEASUREMENT,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "frequency",
-            "ASIC Frequency",
-            ATTR_FREQUENCY,
-            icon="mdi:sine-wave",
-            unit="MHz",
-            state_class=SensorStateClass.MEASUREMENT,
-        ),
-        NerdQAxeSensor(
-            coordinator,
-            "version",
-            "Firmware Version",
-            ATTR_VERSION,
-            icon="mdi:information-outline",
-        ),
-        NerdQAxeUptimeSensor(coordinator),
+    entities: list[SensorEntity] = [
+        NerdQAxeSensor(coordinator, description) for description in SENSORS
     ]
+    entities.append(NerdQAxeUptimeSensor(coordinator))
 
     async_add_entities(entities)
     _LOGGER.info(
-        "Successfully set up %d sensor entities for %s", len(entities), coordinator.host
+        "Successfully set up %d sensor entities for %s",
+        len(entities),
+        coordinator.host,
     )
 
 
 class NerdQAxeSensor(CoordinatorEntity[NerdQAxeDataUpdateCoordinator], SensorEntity):
     """Representation of a NerdQAxe+ Miner sensor.
 
-    Generic sensor entity that reads a specific data key from the coordinator
-    and displays it with appropriate formatting and unit of measurement.
+    Generic sensor entity driven by a :class:`NerdQAxeSensorEntityDescription`
+    that reads its value from the coordinator data via ``value_fn``.
     """
 
-    __slots__ = ("_data_key",)
+    entity_description: NerdQAxeSensorEntityDescription
 
     _attr_has_entity_name = True
 
     def __init__(
         self,
         coordinator: NerdQAxeDataUpdateCoordinator,
-        sensor_id: str,
-        name: str,
-        data_key: str,
-        icon: str | None = None,
-        unit: str | None = None,
-        device_class: SensorDeviceClass | None = None,
-        state_class: SensorStateClass | None = None,
-        suggested_display_precision: int | None = None,
+        description: NerdQAxeSensorEntityDescription,
     ) -> None:
         """Initialize the sensor.
 
         Args:
             coordinator: Data update coordinator instance
-            sensor_id: Unique identifier for translation key
-            name: Display name for the sensor
-            data_key: Key to extract from coordinator data
-            icon: Optional MDI icon
-            unit: Optional unit of measurement
-            device_class: Optional Home Assistant device class
-            state_class: Optional state class for statistics
-            suggested_display_precision: Optional decimal places for display
+            description: Sensor description (key, units, value_fn, ...)
 
         """
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.unique_id_base}_{sensor_id}"
-        self._attr_name = name
-        self._attr_translation_key = sensor_id
-        self._data_key = data_key
-        self._attr_icon = icon
-        self._attr_native_unit_of_measurement = unit
-        self._attr_device_class = device_class
-        self._attr_state_class = state_class
-        self._attr_suggested_display_precision = suggested_display_precision
+        self.entity_description = description
+        self._attr_unique_id = f"{coordinator.unique_id_base}_{description.key}"
+        self._attr_translation_key = description.key
         self._attr_device_info = coordinator.get_device_info()
 
     @property
-    def native_value(self) -> str | int | float | None:
+    def native_value(self) -> StateType:
         """Return the state of the sensor.
 
         Returns:
@@ -375,14 +337,7 @@ class NerdQAxeSensor(CoordinatorEntity[NerdQAxeDataUpdateCoordinator], SensorEnt
         """
         if not self.coordinator.data:
             return None
-
-        value = self.coordinator.data.get(self._data_key)
-
-        # Remove 'v' prefix from version string
-        if self._data_key == ATTR_VERSION and isinstance(value, str):
-            return value.lstrip("v")
-
-        return value
+        return self.entity_description.value_fn(self.coordinator.data)
 
 
 class NerdQAxeUptimeSensor(
@@ -407,7 +362,6 @@ class NerdQAxeUptimeSensor(
         """
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.unique_id_base}_uptime"
-        self._attr_name = "Uptime"
         self._attr_translation_key = "uptime"
         self._attr_icon = "mdi:clock-outline"
         self._attr_device_info = coordinator.get_device_info()
