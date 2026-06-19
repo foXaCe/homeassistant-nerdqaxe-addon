@@ -5,11 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.1.0] - 2026-06-19
 
 ### Added
 - `Core Voltage Actual` sensor exposing the measured ASIC voltage (`coreVoltageActual`),
   distinct from the commanded `Core Voltage` (#14)
+
+### Changed
+- Release workflow now sources its notes from `CHANGELOG.md` instead of PR labels
 
 ### Fixed
 - `Stratum Connected` binary sensor always reported disconnected: it read a
