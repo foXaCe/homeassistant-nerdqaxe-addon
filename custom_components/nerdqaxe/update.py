@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from http import HTTPStatus
 import logging
 from typing import Any
 
@@ -26,6 +27,7 @@ from .const import (
     DOMAIN,
     GITHUB_API_URL,
 )
+from .exceptions import NerdQAxeApiError, NerdQAxeError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -250,14 +252,21 @@ class NerdQAxeUpdateEntity(
     async def async_install(
         self, version: str | None, backup: bool, **kwargs: Any
     ) -> None:
-        """Install a firmware update.
+        """Install a firmware update via the combined factory OTA endpoint.
 
-        Uses the combined factory OTA endpoint which updates both
-        firmware and web interface in a single operation.
+        The miner runs the OTA asynchronously: the POST returns
+        ``202 Accepted`` (``{"status": "started"}``) and a background task
+        flashes both firmware and web interface before rebooting. The reboot
+        tears down the HTTP connection, so a connection error *after* the
+        request has been accepted is expected and must not be reported as a
+        failed install. Only a response the miner actively rejects (e.g. a
+        busy ``409`` or a ``4xx``/``5xx`` status) is a real failure.
         """
         if not self._download_url:
-            _LOGGER.error("No download URL available for firmware update")
-            return
+            raise NerdQAxeError(
+                "No matching factory firmware was found for this device model; "
+                "cannot start the update"
+            )
 
         _LOGGER.info(
             "Starting combined firmware update from %s on %s",
@@ -265,22 +274,42 @@ class NerdQAxeUpdateEntity(
             self.coordinator.host,
         )
 
+        url = f"{self.coordinator.base_url}{API_OTA_GITHUB}"
         try:
-            async with async_timeout.timeout(OTA_TIMEOUT_SECONDS):
-                async with self.coordinator.session.post(
-                    f"{self.coordinator.base_url}{API_OTA_GITHUB}",
+            async with (
+                async_timeout.timeout(OTA_TIMEOUT_SECONDS),
+                self.coordinator.session.post(
+                    url,
                     json={"url": self._download_url},
                     headers={"Content-Type": "application/json"},
-                ) as response:
-                    response.raise_for_status()
-                    result = await response.text()
-                    _LOGGER.info(
-                        "Firmware update initiated successfully on %s: %s",
-                        self.coordinator.host,
-                        result,
+                ) as response,
+            ):
+                # The miner already runs an OTA; nothing to do.
+                if response.status == HTTPStatus.CONFLICT:
+                    raise NerdQAxeError(
+                        "A firmware update is already in progress on the miner"
                     )
-        except aiohttp.ClientError as err:
-            _LOGGER.error(
-                "Failed to update firmware on %s: %s", self.coordinator.host, err
+                # Real rejection (bad/unsafe URL, auth, server error, ...).
+                response.raise_for_status()
+                result = await response.text()
+                _LOGGER.info(
+                    "Firmware update accepted by %s (HTTP %s): %s",
+                    self.coordinator.host,
+                    response.status,
+                    result,
+                )
+        except aiohttp.ClientResponseError as err:
+            # The miner answered with an error status: genuine failure.
+            raise NerdQAxeApiError(
+                f"Miner rejected the firmware update (HTTP {err.status})"
+            ) from err
+        except (aiohttp.ClientError, TimeoutError) as err:
+            # Connection dropped/timed out while the miner was flashing and
+            # rebooting. The OTA runs on the device itself, so this is the
+            # expected outcome — the new version shows up once it is back.
+            _LOGGER.info(
+                "Connection to %s closed during OTA (expected while the miner "
+                "reboots): %s",
+                self.coordinator.host,
+                err,
             )
-            raise

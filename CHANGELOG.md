@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Firmware update no longer reports a false failure. The miner now runs the
+  factory OTA asynchronously (`POST` returns `202 Accepted` and the device
+  flashes then reboots, dropping the HTTP connection). The update entity treats
+  that expected disconnect/timeout as success and only surfaces genuine
+  rejections — a busy miner (`409`) or an HTTP error status
+
 ## [2.1.0] - 2026-06-19
 
 ### Added
