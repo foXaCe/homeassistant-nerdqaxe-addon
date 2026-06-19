@@ -1,10 +1,10 @@
 [project]
 name = "homeassistant-nerdqaxe"
-version = "1.3.5"
+version = "2.1.0"
 description = "Home Assistant integration for NerdQAxe+ Miner"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 authors = [
     {name = "foXaCe"}
 ]
@@ -13,7 +13,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
@@ -39,7 +38,7 @@ Repository = "https://github.com/foXaCe/homeassistant-nerdqaxe-addon"
 Issues = "https://github.com/foXaCe/homeassistant-nerdqaxe-addon/issues"
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py313"
 line-length = 88
 
 [tool.ruff.lint]
@@ -78,12 +77,9 @@ force-sort-within-sections = true
 combine-as-imports = true
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.13"
 show_error_codes = true
-strict = false
-warn_return_any = true
-warn_unused_ignores = true
-disallow_untyped_defs = false
+strict = true
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

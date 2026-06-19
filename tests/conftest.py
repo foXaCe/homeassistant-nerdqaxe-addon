@@ -160,7 +160,7 @@ def mock_api_response() -> dict:
 
 
 @pytest.fixture
-def mock_aiohttp_session() -> Generator[MagicMock, None, None]:
+def mock_aiohttp_session() -> Generator[MagicMock]:
     """Provide a mock aiohttp session with proper async context manager support."""
     mock_session = create_mock_session(
         status=200,
@@ -174,7 +174,7 @@ def mock_aiohttp_session() -> Generator[MagicMock, None, None]:
 
 
 @pytest.fixture
-def mock_config_flow_session() -> Generator[MagicMock, None, None]:
+def mock_config_flow_session() -> Generator[MagicMock]:
     """Provide a mock session for config flow tests."""
     mock_session = create_mock_session(
         status=200,
