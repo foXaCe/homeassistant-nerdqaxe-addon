@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `Core Voltage Actual` sensor exposing the measured ASIC voltage (`coreVoltageActual`),
+  distinct from the commanded `Core Voltage` (#14)
+
+### Fixed
+- `Stratum Connected` binary sensor always reported disconnected: it read a
+  non-existent flat `isStratumConnected` field. It now reads the nested
+  `stratum.pools[].connected` structure exposed by the firmware, with a legacy
+  fallback for older firmware (#13)
+
 ## [2.0.1] - 2026-01-25
 
 ### Changed

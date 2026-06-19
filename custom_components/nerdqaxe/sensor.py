@@ -25,6 +25,7 @@ from .const import (
     ATTR_BEST_DIFF,
     ATTR_BEST_SESSION_DIFF,
     ATTR_CORE_VOLTAGE,
+    ATTR_CORE_VOLTAGE_ACTUAL,
     ATTR_CURRENT,
     ATTR_DEVICE_MODEL,
     ATTR_FAN_RPM,
@@ -73,7 +74,7 @@ async def async_setup_entry(
     """
     coordinator = entry.runtime_data.coordinator
 
-    _LOGGER.debug("Setting up %d sensor entities for %s", 25, coordinator.host)
+    _LOGGER.debug("Setting up %d sensor entities for %s", 26, coordinator.host)
 
     entities = [
         # Hashrate sensors
@@ -184,6 +185,16 @@ async def async_setup_entry(
             "core_voltage",
             "Core Voltage",
             ATTR_CORE_VOLTAGE,
+            unit=UnitOfElectricPotential.MILLIVOLT,
+            device_class=SensorDeviceClass.VOLTAGE,
+            state_class=SensorStateClass.MEASUREMENT,
+            suggested_display_precision=0,
+        ),
+        NerdQAxeSensor(
+            coordinator,
+            "core_voltage_actual",
+            "Core Voltage Actual",
+            ATTR_CORE_VOLTAGE_ACTUAL,
             unit=UnitOfElectricPotential.MILLIVOLT,
             device_class=SensorDeviceClass.VOLTAGE,
             state_class=SensorStateClass.MEASUREMENT,

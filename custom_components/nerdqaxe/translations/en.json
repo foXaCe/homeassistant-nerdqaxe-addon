@@ -63,6 +63,9 @@
       "core_voltage": {
         "name": "Core Voltage"
       },
+      "core_voltage_actual": {
+        "name": "Core Voltage Actual"
+      },
       "fan_speed": {
         "name": "Fan Speed"
       },

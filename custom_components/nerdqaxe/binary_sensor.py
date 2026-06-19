@@ -13,7 +13,12 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NerdQAxeConfigEntry, NerdQAxeDataUpdateCoordinator
-from .const import ATTR_STRATUM_CONNECTED
+from .const import (
+    ATTR_POOL_CONNECTED,
+    ATTR_STRATUM,
+    ATTR_STRATUM_CONNECTED,
+    ATTR_STRATUM_POOLS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -80,11 +85,24 @@ class NerdQAxeStratumSensor(
     def is_on(self) -> bool:
         """Return true if the miner is connected to stratum pool.
 
+        Modern firmware exposes the connection state inside the nested
+        ``stratum.pools[].connected`` structure (one entry per pool in
+        fallback/dual-pool mode). The miner is considered connected as soon as
+        any configured pool reports ``connected``. A legacy flat
+        ``isStratumConnected`` field is used as a fallback for older firmware.
+
         Returns:
-            bool: True if connected, False otherwise
+            bool: True if connected to at least one pool, False otherwise
 
         """
-        if not self.coordinator.data:
+        data = self.coordinator.data
+        if not data:
             return False
-        connected: bool = self.coordinator.data.get(ATTR_STRATUM_CONNECTED, False)
-        return connected
+
+        stratum = data.get(ATTR_STRATUM) or {}
+        pools = stratum.get(ATTR_STRATUM_POOLS) or []
+        if pools:
+            return any(pool.get(ATTR_POOL_CONNECTED, False) for pool in pools)
+
+        # Legacy fallback for firmware exposing a flat boolean field
+        return bool(data.get(ATTR_STRATUM_CONNECTED, False))

@@ -79,6 +79,33 @@ async def test_sensor_state_values(
     assert coordinator.data.get("temp") == MOCK_ASIC_DATA["temp"]
 
 
+async def test_core_voltage_actual_sensor(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Test the Core Voltage Actual sensor reports the measured voltage."""
+    mock_session = create_mock_session(
+        status=200,
+        json_data={**MOCK_SYSTEM_INFO, **MOCK_ASIC_DATA},
+    )
+
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    coordinator = mock_config_entry.runtime_data.coordinator
+    assert coordinator.data.get("coreVoltageActual") == 1180
+
+    # The dedicated sensor entity is created and exposes the measured value
+    ids = hass.states.async_entity_ids("sensor")
+    actual = [e for e in ids if "core_voltage_actual" in e]
+    assert actual, "core_voltage_actual sensor was not created"
+    assert hass.states.get(actual[0]).state == "1180"
+
+
 async def test_binary_sensor_entities_created(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,

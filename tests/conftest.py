@@ -37,10 +37,23 @@ MOCK_ASIC_DATA = {
     "sharesRejected": 5,
     "bestDiff": "1.5M",
     "bestSessionDiff": "500K",
-    "isStratumConnected": True,
+    # Modern firmware exposes pool connection state inside stratum.pools[]
+    "stratum": {
+        "poolMode": 0,
+        "activePoolMode": 0,
+        "pools": [
+            {
+                "connected": True,
+                "poolDifficulty": 10000,
+                "accepted": 1000,
+                "rejected": 5,
+            }
+        ],
+    },
     "foundBlocks": 0,
     "totalFoundBlocks": 0,
     "coreVoltage": 1200,
+    "coreVoltageActual": 1180,
     "frequency": 500,
 }
 

@@ -63,6 +63,9 @@
       "core_voltage": {
         "name": "Tension du cœur"
       },
+      "core_voltage_actual": {
+        "name": "Tension réelle du cœur"
+      },
       "fan_speed": {
         "name": "Vitesse du ventilateur"
       },

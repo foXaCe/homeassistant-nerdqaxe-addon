@@ -47,7 +47,14 @@ The NerdQAxe+ firmware already exposes a complete REST API (no firmware modifica
   "fanrpm": 4500,
   "sharesAccepted": 1234,
   "sharesRejected": 5,
-  "isStratumConnected": true,
+  "coreVoltage": 1150,
+  "coreVoltageActual": 1138,
+  "stratum": {
+    "poolMode": 0,
+    "pools": [
+      { "connected": true, "poolDifficulty": 10000 }
+    ]
+  },
   "deviceModel": "NerdQAxePlus",
   "hostname": "nerdqaxe-123",
   "version": "2.0.3"
@@ -88,7 +95,8 @@ The integration automatically creates the following sensors:
 - `sensor.nerdqaxe_power` - Power consumption (W)
 - `sensor.nerdqaxe_voltage` - Voltage (V)
 - `sensor.nerdqaxe_current` - Current (A)
-- `sensor.nerdqaxe_core_voltage` - Core voltage (mV)
+- `sensor.nerdqaxe_core_voltage` - Commanded core voltage (mV)
+- `sensor.nerdqaxe_core_voltage_actual` - Measured core voltage (mV)
 
 ### Cooling
 - `sensor.nerdqaxe_fan_speed` - Fan speed (%)
