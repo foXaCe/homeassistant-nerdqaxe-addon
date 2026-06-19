@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-06-19
+
 ### Changed
 - Entities and the device are now identified by the miner **MAC address**
   instead of its IP/host, so they survive IP changes. Existing setups are
