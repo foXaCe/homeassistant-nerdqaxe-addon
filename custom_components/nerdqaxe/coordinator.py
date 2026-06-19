@@ -10,12 +10,13 @@ import aiohttp
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.debounce import Debouncer
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
     API_SYSTEM_INFO,
     ATTR_DEVICE_MODEL,
+    ATTR_VERSION,
     DOMAIN,
 )
 from .exceptions import (
@@ -79,30 +80,53 @@ class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ),
         )
 
+    @property
+    def unique_id_base(self) -> str:
+        """Return the stable id base (device MAC) for entities and device.
+
+        The config entry's unique id is the miner MAC address, which is stable
+        across IP changes. Falls back to the host on legacy/edge setups where
+        the entry has no unique id, so entities keep a deterministic id.
+
+        Returns:
+            str: MAC address if available, otherwise the host
+
+        """
+        entry = getattr(self, "config_entry", None)
+        if entry is not None and entry.unique_id:
+            return entry.unique_id
+        return self.host
+
     def get_device_info(self) -> DeviceInfo:
         """Get device information dictionary for entity registration.
 
         Returns a consistent device info dict used by all entities to ensure
-        they are grouped under the same device in Home Assistant.
+        they are grouped under the same device in Home Assistant. The device is
+        identified by its MAC address (stable across IP changes).
 
         Returns:
-            DeviceInfo: Device info (identifiers, name, manufacturer, model)
-
-        Note:
-            TODO(v2.0.0): Use mac_addr instead of host for identifiers to ensure
-            stability when device IP changes. This is a breaking change that will
-            require users to reconfigure their dashboards/automations.
-            See: ATTR_MAC_ADDR in const.py
+            DeviceInfo: Device info (identifiers, connections, metadata)
 
         """
-        # TODO(v2.0.0): Change to {(DOMAIN, self.data.get(ATTR_MAC_ADDR, self.host))}
+        entry = getattr(self, "config_entry", None)
+        mac = entry.unique_id if entry is not None else None
+
+        sw_version: str | None = None
+        model = "Unknown"
+        if self.data:
+            model = self.data.get(ATTR_DEVICE_MODEL, "Unknown")
+            version = self.data.get(ATTR_VERSION)
+            if isinstance(version, str):
+                sw_version = version.lstrip("v")
+
         return DeviceInfo(
-            identifiers={(DOMAIN, self.host)},
+            identifiers={(DOMAIN, self.unique_id_base)},
+            connections={(CONNECTION_NETWORK_MAC, mac)} if mac else set(),
             name=f"NerdQAxe+ Miner ({self.host})",
             manufacturer="NerdQAxe",
-            model=self.data.get(ATTR_DEVICE_MODEL, "Unknown")
-            if self.data
-            else "Unknown",
+            model=model,
+            sw_version=sw_version,
+            configuration_url=f"http://{self.host}",
         )
 
     async def _async_update_data(self) -> dict[str, Any]:

@@ -24,7 +24,6 @@ from .const import (
     API_OTA_GITHUB,
     ATTR_DEVICE_MODEL,
     ATTR_VERSION,
-    DOMAIN,
     GITHUB_API_URL,
 )
 from .exceptions import NerdQAxeApiError, NerdQAxeError
@@ -121,21 +120,14 @@ class NerdQAxeUpdateEntity(
     def __init__(self, coordinator: NerdQAxeDataUpdateCoordinator) -> None:
         """Initialize the update entity."""
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.host}_update"
+        self._attr_unique_id = f"{coordinator.unique_id_base}_update"
         self._attr_name = "Firmware Update"
         self._attr_translation_key = "update"
         self._latest_version: str | None = None
         self._release_notes: str | None = None
         self._download_url: str | None = None
 
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, coordinator.host)},
-            "name": f"NerdQAxe+ Miner ({coordinator.host})",
-            "manufacturer": "NerdQAxe",
-            "model": coordinator.data.get(ATTR_DEVICE_MODEL, "Unknown")
-            if coordinator.data
-            else "Unknown",
-        }
+        self._attr_device_info = coordinator.get_device_info()
 
     async def async_added_to_hass(self) -> None:
         """When entity is added to hass."""

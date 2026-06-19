@@ -354,7 +354,7 @@ class NerdQAxeSensor(CoordinatorEntity[NerdQAxeDataUpdateCoordinator], SensorEnt
 
         """
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.host}_{sensor_id}"
+        self._attr_unique_id = f"{coordinator.unique_id_base}_{sensor_id}"
         self._attr_name = name
         self._attr_translation_key = sensor_id
         self._data_key = data_key
@@ -406,7 +406,7 @@ class NerdQAxeUptimeSensor(
 
         """
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.host}_uptime"
+        self._attr_unique_id = f"{coordinator.unique_id_base}_uptime"
         self._attr_name = "Uptime"
         self._attr_translation_key = "uptime"
         self._attr_icon = "mdi:clock-outline"

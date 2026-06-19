@@ -6,8 +6,9 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from .const import (
     CONF_HOST,
@@ -29,7 +30,7 @@ __all__ = [
 _LOGGER = logging.getLogger(__name__)
 
 # Current ConfigEntry version - increment when data structure changes
-CONFIGENTRY_VERSION = 1
+CONFIGENTRY_VERSION = 2
 
 PLATFORMS: list[Platform] = [
     Platform.SENSOR,
@@ -138,19 +139,6 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         CONFIGENTRY_VERSION,
     )
 
-    # Version 1 is current - no migration needed yet
-    # Future migrations will be added here as:
-    #
-    # if entry.version == 1:
-    #     data = {**entry.data}
-    #     # Transform data for version 2
-    #     hass.config_entries.async_update_entry(entry, data=data, version=2)
-    #
-    # if entry.version == 2:
-    #     data = {**entry.data}
-    #     # Transform data for version 3
-    #     hass.config_entries.async_update_entry(entry, data=data, version=3)
-
     if entry.version > CONFIGENTRY_VERSION:
         # Downgrade not supported
         _LOGGER.error(
@@ -160,5 +148,50 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         return False
 
+    if entry.version == 1:
+        await _async_migrate_v1_to_v2(hass, entry)
+
     _LOGGER.info("Migration to version %s successful", CONFIGENTRY_VERSION)
     return True
+
+
+async def _async_migrate_v1_to_v2(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Re-key entities and device from host-based to MAC-based identifiers.
+
+    Version 1 derived entity unique ids (``{host}_{key}``) and the device
+    identifier (``(DOMAIN, host)``) from the host/IP, which orphans entities
+    when the miner IP changes. Version 2 uses the stable MAC address (stored
+    as the config entry unique id). Idempotent: re-running finds nothing to
+    rewrite once already on the MAC-based scheme.
+
+    Args:
+        hass: Home Assistant instance
+        entry: Config entry being migrated
+
+    """
+    mac = entry.unique_id
+    host = entry.data.get(CONF_HOST)
+
+    if mac and host and mac != host:
+        old_prefix = f"{host}_"
+
+        @callback
+        def _migrate_unique_id(
+            registry_entry: er.RegistryEntry,
+        ) -> dict[str, str] | None:
+            if registry_entry.unique_id.startswith(old_prefix):
+                suffix = registry_entry.unique_id[len(old_prefix) :]
+                return {"new_unique_id": f"{mac}_{suffix}"}
+            return None
+
+        await er.async_migrate_entries(hass, entry.entry_id, _migrate_unique_id)
+
+        # Re-key the device from (DOMAIN, host) to (DOMAIN, mac).
+        device_registry = dr.async_get(hass)
+        device = device_registry.async_get_device(identifiers={(DOMAIN, host)})
+        if device is not None:
+            device_registry.async_update_device(
+                device.id, new_identifiers={(DOMAIN, mac)}
+            )
+
+    hass.config_entries.async_update_entry(entry, version=2)

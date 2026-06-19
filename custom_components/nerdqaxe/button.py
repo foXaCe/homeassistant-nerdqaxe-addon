@@ -70,7 +70,7 @@ class NerdQAxeRestartButton(
 
         """
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.host}_restart"
+        self._attr_unique_id = f"{coordinator.unique_id_base}_restart"
         self._attr_name = "Restart"
         self._attr_translation_key = "restart"
         self._attr_device_info = coordinator.get_device_info()

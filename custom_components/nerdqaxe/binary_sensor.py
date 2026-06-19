@@ -76,7 +76,7 @@ class NerdQAxeStratumSensor(
 
         """
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.host}_stratum_connected"
+        self._attr_unique_id = f"{coordinator.unique_id_base}_stratum_connected"
         self._attr_name = "Stratum Connected"
         self._attr_translation_key = "stratum_connected"
         self._attr_device_info = coordinator.get_device_info()
