@@ -15,6 +15,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import (
     PERCENTAGE,
+    EntityCategory,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfPower,
@@ -183,6 +184,7 @@ SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
         native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=0,
         value_fn=lambda data: data.get(ATTR_CORE_VOLTAGE_ACTUAL),
     ),
@@ -240,11 +242,13 @@ SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
     NerdQAxeSensorEntityDescription(
         key="device_model",
         icon="mdi:chip",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.get(ATTR_DEVICE_MODEL),
     ),
     NerdQAxeSensorEntityDescription(
         key="hostname",
         icon="mdi:server",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.get(ATTR_HOSTNAME),
     ),
     NerdQAxeSensorEntityDescription(
@@ -253,6 +257,7 @@ SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
         native_unit_of_measurement=UNIT_DECIBEL_MILLIWATT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda data: data.get(ATTR_WIFI_RSSI),
     ),
     NerdQAxeSensorEntityDescription(
@@ -265,6 +270,7 @@ SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
     NerdQAxeSensorEntityDescription(
         key="version",
         icon="mdi:information-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_clean_version,
     ),
 )
@@ -355,6 +361,7 @@ class NerdQAxeUptimeSensor(
     __slots__ = ()
 
     _attr_has_entity_name = True
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, coordinator: NerdQAxeDataUpdateCoordinator) -> None:
         """Initialize the uptime sensor.
