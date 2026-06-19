@@ -24,6 +24,8 @@ from .const import (
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
 )
 from .exceptions import NerdQAxeConnectionError
 
@@ -44,7 +46,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         dict: Device information (title, device_model, mac_addr)
 
     Raises:
-        NerdQAxeConnectionError: If connection to miner fails
+        NerdQAxeConnectionError: If the miner cannot be reached or times out
 
     """
     host = data[CONF_HOST]
@@ -53,31 +55,30 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     _LOGGER.debug("Validating connection to NerdQAxe+ miner at %s", host)
 
     try:
-        async with async_timeout.timeout(10):
-            async with session.get(f"http://{host}{API_SYSTEM_INFO}") as response:
-                response.raise_for_status()
-                result = await response.json()
-
-                _LOGGER.info(
-                    "Successfully connected to miner at %s (hostname: %s)",
-                    host,
-                    result.get("hostname", "unknown"),
-                )
-
-                return {
-                    "title": result.get("hostname", DEFAULT_NAME),
-                    "device_model": result.get("deviceModel", "Unknown"),
-                    "mac_addr": result.get("macAddr", "Unknown"),
-                }
+        async with (
+            async_timeout.timeout(10),
+            session.get(f"http://{host}{API_SYSTEM_INFO}") as response,
+        ):
+            response.raise_for_status()
+            result = await response.json()
     except aiohttp.ClientError as err:
         _LOGGER.error("Could not connect to NerdQAxe+ Miner at %s: %s", host, err)
         raise NerdQAxeConnectionError(f"Cannot connect to miner at {host}") from err
     except TimeoutError as err:
         _LOGGER.error("Timeout connecting to NerdQAxe+ Miner at %s", host)
         raise NerdQAxeConnectionError(f"Timeout connecting to miner at {host}") from err
-    except Exception as err:
-        _LOGGER.error("Unexpected exception during validation for %s: %s", host, err)
-        raise NerdQAxeConnectionError(f"Unexpected error: {err}") from err
+
+    _LOGGER.info(
+        "Successfully connected to miner at %s (hostname: %s)",
+        host,
+        result.get("hostname", "unknown"),
+    )
+
+    return {
+        "title": result.get("hostname", DEFAULT_NAME),
+        "device_model": result.get("deviceModel", "Unknown"),
+        "mac_addr": result.get("macAddr", "Unknown"),
+    }
 
 
 class NerdQAxeConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -232,7 +233,10 @@ class NerdQAxeOptionsFlow(OptionsFlow):
                         default=self.config_entry.options.get(
                             CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
                         ),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
+                    ): vol.All(
+                        vol.Coerce(int),
+                        vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL),
+                    ),
                 }
             ),
         )

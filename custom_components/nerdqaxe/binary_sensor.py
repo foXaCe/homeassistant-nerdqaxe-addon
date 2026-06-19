@@ -22,6 +22,9 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+# All entities read from a single coordinator; updates are not per-entity.
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,

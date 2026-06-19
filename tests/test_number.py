@@ -9,6 +9,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.nerdqaxe.const import DOMAIN
+from custom_components.nerdqaxe.exceptions import NerdQAxeApiError
 
 from .conftest import (
     MOCK_ASIC_DATA,
@@ -100,7 +101,7 @@ async def test_number_set_frequency_failure(
         assert len(freq_entity) > 0
 
         # Set new value - should raise error
-        with pytest.raises(aiohttp.ClientError):
+        with pytest.raises(NerdQAxeApiError):
             await hass.services.async_call(
                 "number",
                 "set_value",
@@ -176,7 +177,7 @@ async def test_number_set_core_voltage_failure(
         assert len(voltage_entity) > 0
 
         # Set new value - should raise error
-        with pytest.raises(aiohttp.ClientError):
+        with pytest.raises(NerdQAxeApiError):
             await hass.services.async_call(
                 "number",
                 "set_value",

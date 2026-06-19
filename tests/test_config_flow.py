@@ -135,8 +135,8 @@ async def test_form_already_configured(hass: HomeAssistant) -> None:
     assert result2["reason"] == "already_configured"
 
 
-async def test_form_generic_error(hass: HomeAssistant) -> None:
-    """Test handling generic errors (all convert to cannot_connect)."""
+async def test_form_unknown_error(hass: HomeAssistant) -> None:
+    """Test that unexpected (non-connection) errors surface as 'unknown'."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
@@ -154,7 +154,68 @@ async def test_form_generic_error(hass: HomeAssistant) -> None:
             {CONF_HOST: MOCK_HOST},
         )
 
-    # All exceptions in validate_input are converted to CannotConnectError
+    # Unexpected errors are differentiated from connection errors
+    assert result2["type"] == FlowResultType.FORM
+    assert result2["errors"] == {"base": "unknown"}
+
+
+async def test_reconfigure_success(hass: HomeAssistant) -> None:
+    """Test reconfiguring the host of an existing miner."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="NerdQAxe+ Miner",
+        data={CONF_HOST: MOCK_HOST},
+        unique_id=MOCK_SYSTEM_INFO["macAddr"],
+        version=2,
+    )
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+    assert result["type"] == FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+
+    mock_session = create_mock_session(status=200, json_data=MOCK_SYSTEM_INFO)
+    with (
+        patch(
+            "custom_components.nerdqaxe.config_flow.async_get_clientsession",
+            return_value=mock_session,
+        ),
+        patch("custom_components.nerdqaxe.async_setup_entry", return_value=True),
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_HOST: "192.168.1.200"},
+        )
+        await hass.async_block_till_done()
+
+    assert result2["type"] == FlowResultType.ABORT
+    assert result2["reason"] == "reconfigure_successful"
+    assert entry.data[CONF_HOST] == "192.168.1.200"
+
+
+async def test_reconfigure_cannot_connect(hass: HomeAssistant) -> None:
+    """Test reconfigure shows an error when the new host is unreachable."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="NerdQAxe+ Miner",
+        data={CONF_HOST: MOCK_HOST},
+        unique_id=MOCK_SYSTEM_INFO["macAddr"],
+        version=2,
+    )
+    entry.add_to_hass(hass)
+
+    result = await entry.start_reconfigure_flow(hass)
+
+    mock_session = create_mock_session(raise_error=aiohttp.ClientError())
+    with patch(
+        "custom_components.nerdqaxe.config_flow.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        result2 = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_HOST: "192.168.1.200"},
+        )
+
     assert result2["type"] == FlowResultType.FORM
     assert result2["errors"] == {"base": "cannot_connect"}
 

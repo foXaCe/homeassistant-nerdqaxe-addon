@@ -30,6 +30,9 @@ from .exceptions import NerdQAxeApiError, NerdQAxeError
 
 _LOGGER = logging.getLogger(__name__)
 
+# Only one firmware update entity, and the OTA endpoint must not be hammered.
+PARALLEL_UPDATES = 1
+
 # Greek letter gamma for device model normalization
 GREEK_GAMMA = "\u03b3"
 

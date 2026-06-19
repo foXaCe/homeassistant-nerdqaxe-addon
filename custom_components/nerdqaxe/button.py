@@ -13,8 +13,12 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NerdQAxeConfigEntry, NerdQAxeDataUpdateCoordinator
 from .const import API_SYSTEM_RESTART
+from .exceptions import NerdQAxeApiError
 
 _LOGGER = logging.getLogger(__name__)
+
+# All entities read from a single coordinator; updates are not per-entity.
+PARALLEL_UPDATES = 0
 
 
 async def async_setup_entry(
@@ -81,22 +85,23 @@ class NerdQAxeRestartButton(
         Sends POST request to /api/system/restart endpoint.
 
         Raises:
-            aiohttp.ClientError: If restart command fails
+            NerdQAxeApiError: If the restart command fails
 
         """
         _LOGGER.debug("Restart button pressed for %s", self.coordinator.host)
         try:
-            async with async_timeout.timeout(10):
-                async with self.coordinator.session.post(
+            async with (
+                async_timeout.timeout(10),
+                self.coordinator.session.post(
                     f"{self.coordinator.base_url}{API_SYSTEM_RESTART}"
-                ) as response:
-                    response.raise_for_status()
-                    _LOGGER.info(
-                        "Restart command sent successfully to %s",
-                        self.coordinator.host,
-                    )
-        except aiohttp.ClientError as err:
-            _LOGGER.error(
-                "Failed to restart miner at %s: %s", self.coordinator.host, err
-            )
-            raise
+                ) as response,
+            ):
+                response.raise_for_status()
+                _LOGGER.info(
+                    "Restart command sent successfully to %s",
+                    self.coordinator.host,
+                )
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise NerdQAxeApiError(
+                f"Failed to restart miner at {self.coordinator.host}"
+            ) from err

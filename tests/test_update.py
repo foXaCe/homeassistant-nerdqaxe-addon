@@ -76,6 +76,27 @@ def _session_with_post(
     return session
 
 
+class _JsonResponse:
+    """Async-aware response whose body is decoded as JSON."""
+
+    def __init__(self, payload: object, status: int = 200) -> None:
+        self.status = status
+        self._payload = payload
+
+    async def json(self) -> object:
+        return self._payload
+
+    def raise_for_status(self) -> None:
+        if self.status >= 400:
+            raise _client_response_error(self.status)
+
+
+def _session_with_get(payload: object) -> MagicMock:
+    session = MagicMock()
+    session.get = MagicMock(return_value=_PostCtx(_JsonResponse(payload)))
+    return session
+
+
 def _make_update_entity(
     session: MagicMock, download_url: str | None = _DOWNLOAD_URL
 ) -> NerdQAxeUpdateEntity:
@@ -133,6 +154,59 @@ async def test_install_raises_without_download_url() -> None:
     )
     with pytest.raises(NerdQAxeError):
         await entity.async_install(None, False)
+
+
+async def test_check_latest_release_finds_firmware() -> None:
+    """The GitHub check resolves the latest version and the factory image."""
+    releases = [
+        {
+            "tag_name": "v1.0.40",
+            "prerelease": False,
+            "body": "Release notes",
+            "assets": [
+                {
+                    "name": "esp-miner-factory-NerdQAxe+-v1.0.40.bin",
+                    "browser_download_url": (
+                        "https://github.com/shufps/ESP-Miner-NerdQAxePlus/"
+                        "releases/download/v1.0.40/"
+                        "esp-miner-factory-NerdQAxe+-v1.0.40.bin"
+                    ),
+                }
+            ],
+        }
+    ]
+    entity = _make_update_entity(_session_with_get(releases), download_url=None)
+    entity.coordinator.data = {"deviceModel": "NerdQAxe+", "version": "1.0.39"}
+
+    await entity._async_check_latest_release()
+
+    assert entity.latest_version == "1.0.40"
+    assert entity._download_url is not None
+    assert await entity.async_release_notes() == "Release notes"
+
+
+async def test_check_latest_release_no_matching_firmware() -> None:
+    """A release without a matching factory image leaves the URL unset."""
+    releases = [
+        {
+            "tag_name": "v1.0.40",
+            "prerelease": False,
+            "body": "Notes",
+            "assets": [
+                {
+                    "name": "esp-miner-factory-NerdOtherModel-v1.0.40.bin",
+                    "browser_download_url": "https://github.com/other.bin",
+                }
+            ],
+        }
+    ]
+    entity = _make_update_entity(_session_with_get(releases), download_url=None)
+    entity.coordinator.data = {"deviceModel": "NerdQAxe+", "version": "1.0.39"}
+
+    await entity._async_check_latest_release()
+
+    assert entity.latest_version == "1.0.40"
+    assert entity._download_url is None
 
 
 @pytest.mark.parametrize(
