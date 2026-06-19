@@ -124,7 +124,6 @@ class NerdQAxeUpdateEntity(
         """Initialize the update entity."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.unique_id_base}_update"
-        self._attr_name = "Firmware Update"
         self._attr_translation_key = "update"
         self._latest_version: str | None = None
         self._release_notes: str | None = None

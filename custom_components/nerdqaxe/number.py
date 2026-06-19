@@ -85,7 +85,6 @@ class NerdQAxeFrequencyNumber(
         """
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.unique_id_base}_frequency"
-        self._attr_name = "ASIC Frequency"
         self._attr_translation_key = "frequency"
         self._attr_device_info = coordinator.get_device_info()
 
@@ -164,7 +163,6 @@ class NerdQAxeCoreVoltageNumber(
         """
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.unique_id_base}_core_voltage"
-        self._attr_name = "Core Voltage"
         self._attr_translation_key = "core_voltage"
         self._attr_device_info = coordinator.get_device_info()
 
