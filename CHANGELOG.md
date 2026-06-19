@@ -16,8 +16,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Control actions (restart, ASIC frequency, core voltage) now surface a clear
   error in Home Assistant when the miner rejects the command, instead of a raw
   traceback
+- Diagnostic sensors (firmware version, hostname, device model, Wi-Fi signal,
+  measured core voltage and uptime) are now grouped under the **Diagnostic**
+  entity category
+- The integration now targets **Python 3.13** (matching current Home Assistant)
+  and is type-checked under mypy `--strict`
 
 ### Fixed
+- Entity names for the restart button, the ASIC frequency / core voltage
+  controls, the firmware update and the Stratum connectivity sensor are now
+  localized. They previously set an English `_attr_name` that overrode their
+  `translation_key`, so non-English users always saw English names
+- The reconfigure flow, field tooltips and option descriptions are now
+  translated. Those strings existed in `strings.json` but were missing from
+  `translations/en.json` and `translations/fr.json` (and an orphaned
+  `www_update` key was removed), so they appeared untranslated at runtime
 - Firmware update no longer reports a false failure. The miner now runs the
   factory OTA asynchronously (`POST` returns `202 Accepted` and the device
   flashes then reboots, dropping the HTTP connection). The update entity treats

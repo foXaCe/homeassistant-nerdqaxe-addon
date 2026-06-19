@@ -163,6 +163,21 @@ To modify options:
 2. Find "NerdQAxe+ Miner"
 3. Click **Options**
 
+## Removal
+
+To remove the integration:
+
+1. Go to **Settings** → **Devices & Services**
+2. Click on the **NerdQAxe+ Miner** integration
+3. Click the 3 dots next to the entry → **Delete**
+4. All devices, entities and history for this miner are removed automatically
+
+To also remove the files (if installed via HACS):
+
+5. Open **HACS** → **Integrations**
+6. Find **NerdQAxe+ Miner**, click the 3 dots → **Remove**
+7. Restart Home Assistant
+
 ## Usage
 
 ### Example Lovelace Card
@@ -409,19 +424,22 @@ Firmware update entity:
 ATTR_NEW_FIELD = "newField"
 ```
 
-2. In `sensor.py`, add to the `entities` list:
+2. In `sensor.py`, add a `NerdQAxeSensorEntityDescription` to the `SENSORS` tuple:
 ```python
-NerdQAxeSensor(
-    coordinator,
-    "new_sensor",
-    "Sensor Name",
-    ATTR_NEW_FIELD,
+NerdQAxeSensorEntityDescription(
+    key="new_sensor",
     icon="mdi:icon-name",
-    unit="unit",
+    native_unit_of_measurement="unit",
     device_class=SensorDeviceClass.XXX,
     state_class=SensorStateClass.MEASUREMENT,
+    value_fn=lambda data: data.get(ATTR_NEW_FIELD),
 ),
 ```
+
+3. Add the entity name under `entity.sensor.new_sensor.name` in
+   `strings.json` and every file in `translations/` (keep all language files
+   in sync — the entity name is resolved from `translation_key`, never from a
+   hardcoded `_attr_name`).
 
 ### Local Testing
 
