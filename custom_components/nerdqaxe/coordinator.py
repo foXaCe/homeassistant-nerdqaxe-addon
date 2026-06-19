@@ -92,7 +92,7 @@ class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             str: MAC address if available, otherwise the host
 
         """
-        entry = getattr(self, "config_entry", None)
+        entry: NerdQAxeConfigEntry | None = getattr(self, "config_entry", None)
         if entry is not None and entry.unique_id:
             return entry.unique_id
         return self.host
@@ -108,7 +108,7 @@ class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             DeviceInfo: Device info (identifiers, connections, metadata)
 
         """
-        entry = getattr(self, "config_entry", None)
+        entry: NerdQAxeConfigEntry | None = getattr(self, "config_entry", None)
         mac = entry.unique_id if entry is not None else None
 
         sw_version: str | None = None
