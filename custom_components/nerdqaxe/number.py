@@ -13,7 +13,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NerdQAxeConfigEntry, NerdQAxeDataUpdateCoordinator
 from .const import (
-    API_SYSTEM_ASIC,
+    API_SYSTEM,
     ATTR_CORE_VOLTAGE,
     ATTR_FREQUENCY,
 )
@@ -62,8 +62,9 @@ class NerdQAxeFrequencyNumber(
 ):
     """Representation of NerdQAxe+ ASIC frequency control.
 
-    Number entity for adjusting the mining ASIC frequency between 400-575 MHz
-    in 25 MHz steps. Changes are applied via REST API.
+    Number entity for adjusting the mining ASIC frequency between 400-800 MHz
+    in 1 MHz steps (overclock-friendly). The miner firmware keeps its own
+    overheat protection. Changes are applied via ``PATCH /api/system``.
     """
 
     __slots__ = ()
@@ -71,8 +72,8 @@ class NerdQAxeFrequencyNumber(
     _attr_icon = "mdi:sine-wave"
     _attr_mode = NumberMode.BOX
     _attr_native_min_value = 400
-    _attr_native_max_value = 575
-    _attr_native_step = 25
+    _attr_native_max_value = 800
+    _attr_native_step = 1
     _attr_native_unit_of_measurement = "MHz"
     _attr_has_entity_name = True
 
@@ -105,7 +106,7 @@ class NerdQAxeFrequencyNumber(
         """Set new ASIC frequency value.
 
         Args:
-            value: New frequency in MHz (400-575, step 25)
+            value: New frequency in MHz (400-800, step 1)
 
         Raises:
             NerdQAxeApiError: If the API command fails
@@ -117,8 +118,8 @@ class NerdQAxeFrequencyNumber(
         try:
             async with (
                 async_timeout.timeout(10),
-                self.coordinator.session.post(
-                    f"{self.coordinator.base_url}{API_SYSTEM_ASIC}",
+                self.coordinator.session.patch(
+                    f"{self.coordinator.base_url}{API_SYSTEM}",
                     json={"frequency": int(value)},
                 ) as response,
             ):
@@ -141,7 +142,7 @@ class NerdQAxeCoreVoltageNumber(
     """Representation of NerdQAxe+ core voltage control.
 
     Number entity for adjusting the ASIC core voltage between 1000-1300 mV
-    in 10 mV steps. Changes are applied via REST API.
+    in 5 mV steps. Changes are applied via ``PATCH /api/system``.
     """
 
     __slots__ = ()
@@ -150,7 +151,7 @@ class NerdQAxeCoreVoltageNumber(
     _attr_mode = NumberMode.BOX
     _attr_native_min_value = 1000
     _attr_native_max_value = 1300
-    _attr_native_step = 10
+    _attr_native_step = 5
     _attr_native_unit_of_measurement = "mV"
     _attr_has_entity_name = True
 
@@ -183,7 +184,7 @@ class NerdQAxeCoreVoltageNumber(
         """Set new core voltage value.
 
         Args:
-            value: New voltage in mV (1000-1300, step 10)
+            value: New voltage in mV (1000-1300, step 5)
 
         Raises:
             NerdQAxeApiError: If the API command fails
@@ -195,8 +196,8 @@ class NerdQAxeCoreVoltageNumber(
         try:
             async with (
                 async_timeout.timeout(10),
-                self.coordinator.session.post(
-                    f"{self.coordinator.base_url}{API_SYSTEM_ASIC}",
+                self.coordinator.session.patch(
+                    f"{self.coordinator.base_url}{API_SYSTEM}",
                     json={"coreVoltage": int(value)},
                 ) as response,
             ):

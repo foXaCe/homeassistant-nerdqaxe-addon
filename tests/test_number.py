@@ -44,10 +44,10 @@ async def test_number_set_frequency_success(
         json_data={**MOCK_SYSTEM_INFO, **MOCK_ASIC_DATA},
     )
 
-    # Setup POST mock for ASIC endpoint
-    post_response = MockAiohttpResponse(status=200)
-    post_ctx = MockAiohttpContextManager(response=post_response)
-    mock_session.post = MagicMock(return_value=post_ctx)
+    # Setup PATCH mock for the settings endpoint
+    patch_response = MockAiohttpResponse(status=200)
+    patch_ctx = MockAiohttpContextManager(response=patch_response)
+    mock_session.patch = MagicMock(return_value=patch_ctx)
 
     with patch(
         "custom_components.nerdqaxe.coordinator.async_get_clientsession",
@@ -70,8 +70,9 @@ async def test_number_set_frequency_success(
             blocking=True,
         )
 
-        # Verify POST was called
-        mock_session.post.assert_called()
+        # Verify PATCH /api/system was called (POST /api/system/asic returns 405)
+        mock_session.patch.assert_called()
+        assert mock_session.patch.call_args.args[0].endswith("/api/system")
 
 
 async def test_number_set_frequency_failure(
@@ -84,8 +85,8 @@ async def test_number_set_frequency_failure(
         json_data={**MOCK_SYSTEM_INFO, **MOCK_ASIC_DATA},
     )
 
-    # Setup POST mock to raise error
-    mock_session.post = MagicMock(side_effect=aiohttp.ClientError("Connection failed"))
+    # Setup PATCH mock to raise error
+    mock_session.patch = MagicMock(side_effect=aiohttp.ClientError("Connection failed"))
 
     with patch(
         "custom_components.nerdqaxe.coordinator.async_get_clientsession",
@@ -120,10 +121,10 @@ async def test_number_set_core_voltage_success(
         json_data={**MOCK_SYSTEM_INFO, **MOCK_ASIC_DATA},
     )
 
-    # Setup POST mock for ASIC endpoint
-    post_response = MockAiohttpResponse(status=200)
-    post_ctx = MockAiohttpContextManager(response=post_response)
-    mock_session.post = MagicMock(return_value=post_ctx)
+    # Setup PATCH mock for the settings endpoint
+    patch_response = MockAiohttpResponse(status=200)
+    patch_ctx = MockAiohttpContextManager(response=patch_response)
+    mock_session.patch = MagicMock(return_value=patch_ctx)
 
     with patch(
         "custom_components.nerdqaxe.coordinator.async_get_clientsession",
@@ -146,8 +147,9 @@ async def test_number_set_core_voltage_success(
             blocking=True,
         )
 
-        # Verify POST was called
-        mock_session.post.assert_called()
+        # Verify PATCH /api/system was called (POST /api/system/asic returns 405)
+        mock_session.patch.assert_called()
+        assert mock_session.patch.call_args.args[0].endswith("/api/system")
 
 
 async def test_number_set_core_voltage_failure(
@@ -160,8 +162,8 @@ async def test_number_set_core_voltage_failure(
         json_data={**MOCK_SYSTEM_INFO, **MOCK_ASIC_DATA},
     )
 
-    # Setup POST mock to raise error
-    mock_session.post = MagicMock(side_effect=aiohttp.ClientError("Connection failed"))
+    # Setup PATCH mock to raise error
+    mock_session.patch = MagicMock(side_effect=aiohttp.ClientError("Connection failed"))
 
     with patch(
         "custom_components.nerdqaxe.coordinator.async_get_clientsession",

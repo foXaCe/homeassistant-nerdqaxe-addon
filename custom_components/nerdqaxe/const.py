@@ -35,7 +35,9 @@ MAX_SCAN_INTERVAL: Final = 300
 
 # API Endpoints
 API_SYSTEM_INFO: Final = "/api/system/info"
-API_SYSTEM_ASIC: Final = "/api/system/asic"
+# Settings are changed with PATCH /api/system; /api/system/asic is GET-only
+# (it returns ASIC info and rejects writes with 405 Method Not Allowed).
+API_SYSTEM: Final = "/api/system"
 API_SYSTEM_RESTART: Final = "/api/system/restart"
 API_OTA_GITHUB: Final = "/api/system/OTA/github"  # Combined factory OTA (fw + www)
 
