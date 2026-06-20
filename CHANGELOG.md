@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Automatic discovery of miners via **DHCP**. When a host whose name starts
+  with `nerd` requests a lease, Home Assistant validates it through the miner
+  API and offers to set it up. An already-configured miner has its stored IP
+  refreshed automatically, complementing the stable MAC-based identity
+- Second-fan sensors (`Fan 2 Speed` / `Fan 2 RPM`) for dual-fan boards such as
+  the NerdQAxe++ and NerdOCTAXE, created automatically only when the miner
+  reports a second fan (`fanspeed2` / `fanrpm2`) (#13)
+
+### Changed
+- The ASIC frequency control now spans **400–800 MHz in 1 MHz steps** (was
+  400–575 in 25 MHz steps) and core voltage uses 5 mV steps, so overclock
+  values can be set. The miner firmware still enforces its own thermal
+  protection (#16)
+
+### Fixed
+- Changing ASIC frequency or core voltage no longer fails with `405 Method Not
+  Allowed`. The number entities wrote to the read-only `/api/system/asic`
+  endpoint; they now send `PATCH /api/system` (#16)
+
 ## [2.2.0] - 2026-06-19
 
 ### Changed

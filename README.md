@@ -120,7 +120,7 @@ The integration automatically creates the following sensors:
 
 ### Control and Updates
 - `button.nerdqaxe_restart` - Button to restart the miner
-- `number.nerdqaxe_asic_frequency` - ASIC frequency control (400-575 MHz)
+- `number.nerdqaxe_asic_frequency` - ASIC frequency control (400-800 MHz)
 - `number.nerdqaxe_core_voltage` - Core voltage control (1000-1300 mV)
 - `update.nerdqaxe_firmware_update` - Firmware update entity (automatically checks for new versions on GitHub)
 
@@ -144,6 +144,15 @@ The integration automatically creates the following sensors:
 3. Restart Home Assistant
 
 ## Configuration
+
+### Automatic discovery (DHCP)
+
+When a NerdQAxe+ miner (any host whose name starts with `nerd`) requests a DHCP
+lease, Home Assistant automatically detects it and shows it under
+**Settings** → **Devices & Services** as a discovered device — just click
+**Configure**. An already-configured miner has its IP refreshed automatically
+when it changes. If your miner isn't discovered (e.g. Home Assistant cannot see
+DHCP traffic on your network), add it manually below.
 
 ### Via User Interface
 
@@ -402,9 +411,9 @@ Defines the restart button:
 
 #### `number.py`
 Number entities for performance control:
-- ASIC frequency control (400-575 MHz)
+- ASIC frequency control (400-800 MHz)
 - Core voltage control (1000-1300 mV)
-- Calls the miner's `POST /api/system/asic` API
+- Calls the miner's `PATCH /api/system` API
 - Automatically refreshes coordinator after changes
 
 #### `update.py`
@@ -469,11 +478,11 @@ logger:
 - [x] Uptime sensors (via 1d hashrate)
 - [x] Periodic update checks (every 6 hours)
 - [x] Number entities to dynamically modify frequency/voltage
+- [x] Automatic network discovery of miners (DHCP) with IP auto-refresh
 
 ### 🔜 Features to Add:
 - [ ] WebSocket support for real-time hashrate updates
 - [ ] Multi-miner support (multiple devices in one integration)
-- [ ] Network auto-discovery of miners (mDNS)
 - [ ] Pre-configured Lovelace dashboard with all cards
 - [ ] Pool difficulty sensor
 - [ ] Configurable alerts via UI
