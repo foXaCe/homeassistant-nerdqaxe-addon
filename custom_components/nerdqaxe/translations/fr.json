@@ -93,6 +93,12 @@
       "fan_rpm": {
         "name": "Tours/min ventilateur"
       },
+      "fan_speed_2": {
+        "name": "Vitesse ventilateur 2"
+      },
+      "fan_rpm_2": {
+        "name": "Tours/min ventilateur 2"
+      },
       "shares_accepted": {
         "name": "Partages acceptés"
       },

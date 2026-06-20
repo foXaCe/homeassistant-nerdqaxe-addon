@@ -34,8 +34,11 @@ from .const import (
     ATTR_CORE_VOLTAGE_ACTUAL,
     ATTR_CURRENT,
     ATTR_DEVICE_MODEL,
+    ATTR_FAN_COUNT,
     ATTR_FAN_RPM,
+    ATTR_FAN_RPM_2,
     ATTR_FAN_SPEED,
+    ATTR_FAN_SPEED_2,
     ATTR_FOUND_BLOCKS,
     ATTR_FREQUENCY,
     ATTR_HASHRATE,
@@ -275,6 +278,42 @@ SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
     ),
 )
 
+# Sensors created only on dual-fan boards (NerdQAxe++, NerdOCTAXE, ...), which
+# expose a second fan via flat ``fanspeed2`` / ``fanrpm2`` fields.
+SECONDARY_FAN_SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
+    NerdQAxeSensorEntityDescription(
+        key="fan_speed_2",
+        icon="mdi:fan",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get(ATTR_FAN_SPEED_2),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="fan_rpm_2",
+        icon="mdi:fan",
+        native_unit_of_measurement=UNIT_REVOLUTIONS_PER_MINUTE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get(ATTR_FAN_RPM_2),
+    ),
+)
+
+
+def _has_second_fan(data: dict[str, Any] | None) -> bool:
+    """Return True if the miner reports a second fan.
+
+    ``fanCount`` is the authoritative signal and is present on current
+    firmware (single-fan boards report ``fanCount: 1`` while still sending
+    ``fanspeed2``/``fanrpm2`` as ``0``, so those fields cannot be used as a
+    presence check). Only when ``fanCount`` is absent (older firmware) do we
+    fall back to a *non-zero* second-fan reading.
+    """
+    if not data:
+        return False
+    fan_count = data.get(ATTR_FAN_COUNT)
+    if fan_count is not None:
+        return bool(fan_count >= 2)
+    return bool(data.get(ATTR_FAN_RPM_2) or data.get(ATTR_FAN_SPEED_2))
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -298,6 +337,13 @@ async def async_setup_entry(
         NerdQAxeSensor(coordinator, description) for description in SENSORS
     ]
     entities.append(NerdQAxeUptimeSensor(coordinator))
+
+    # Dual-fan boards expose a second fan; only add those sensors when present.
+    if _has_second_fan(coordinator.data):
+        entities.extend(
+            NerdQAxeSensor(coordinator, description)
+            for description in SECONDARY_FAN_SENSORS
+        )
 
     async_add_entities(entities)
     _LOGGER.info(

@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -229,3 +230,65 @@ async def test_coordinator_data_propagation(
     expected_keys = ["hostname", "hashRate", "temp", "power", "fanspeed"]
     for key in expected_keys:
         assert key in coordinator.data, f"Missing key: {key}"
+
+
+async def test_second_fan_sensors_created_on_dual_fan(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Dual-fan boards (e.g. NerdQAxe++) expose fan_speed_2 / fan_rpm_2."""
+    dual_fan = {
+        **MOCK_SYSTEM_INFO,
+        **MOCK_ASIC_DATA,
+        "fanCount": 2,
+        "fanspeed2": 100,
+        "fanrpm2": 2474,
+    }
+    mock_session = create_mock_session(status=200, json_data=dual_fan)
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    ent_reg = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(ent_reg, mock_config_entry.entry_id)
+
+    rpm2 = next((e for e in entries if e.unique_id.endswith("_fan_rpm_2")), None)
+    speed2 = next((e for e in entries if e.unique_id.endswith("_fan_speed_2")), None)
+    assert rpm2 is not None, "fan_rpm_2 sensor not created"
+    assert speed2 is not None, "fan_speed_2 sensor not created"
+    assert hass.states.get(rpm2.entity_id).state == "2474"
+    assert hass.states.get(speed2.entity_id).state == "100"
+
+
+async def test_second_fan_sensors_absent_on_single_fan(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Single-fan boards do not expose the second-fan sensors.
+
+    Real single-fan firmware still sends ``fanspeed2``/``fanrpm2`` as ``0`` with
+    ``fanCount: 1``, so presence of those keys must not create phantom sensors.
+    """
+    single_fan = {
+        **MOCK_SYSTEM_INFO,
+        **MOCK_ASIC_DATA,
+        "fanCount": 1,
+        "fanspeed2": 0,
+        "fanrpm2": 0,
+    }
+    mock_session = create_mock_session(status=200, json_data=single_fan)
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    ent_reg = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(ent_reg, mock_config_entry.entry_id)
+    assert not any(
+        e.unique_id.endswith(("_fan_rpm_2", "_fan_speed_2")) for e in entries
+    )

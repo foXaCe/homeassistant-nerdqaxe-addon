@@ -93,6 +93,12 @@
       "fan_rpm": {
         "name": "Fan RPM"
       },
+      "fan_speed_2": {
+        "name": "Fan 2 Speed"
+      },
+      "fan_rpm_2": {
+        "name": "Fan 2 RPM"
+      },
       "shares_accepted": {
         "name": "Shares Accepted"
       },
