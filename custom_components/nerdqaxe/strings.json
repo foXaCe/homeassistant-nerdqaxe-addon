@@ -20,6 +20,10 @@
         "data_description": {
           "host": "The new IP address or hostname of the miner"
         }
+      },
+      "discovery_confirm": {
+        "title": "Discovered NerdQAxe+ Miner",
+        "description": "Do you want to set up the NerdQAxe+ miner {name}?"
       }
     },
     "error": {

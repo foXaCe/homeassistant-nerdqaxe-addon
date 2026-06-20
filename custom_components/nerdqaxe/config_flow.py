@@ -15,6 +15,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 import voluptuous as vol
 
 from .const import (
@@ -94,6 +95,7 @@ class NerdQAxeConfigFlow(ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._host: str | None = None
         self._mac_addr: str | None = None
+        self._discovered_title: str | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -134,6 +136,68 @@ class NerdQAxeConfigFlow(ConfigFlow, domain=DOMAIN):
                 }
             ),
             errors=errors,
+        )
+
+    async def async_step_dhcp(
+        self, discovery_info: DhcpServiceInfo
+    ) -> ConfigFlowResult:
+        """Handle a miner discovered via DHCP.
+
+        Triggered when a host whose name starts with ``nerd`` requests a DHCP
+        lease. The miner is validated through its API (which also yields the
+        stable MAC used as the unique id, keeping discovery consistent with the
+        manual flow). An already-configured miner silently has its stored host
+        refreshed to the freshly leased IP.
+
+        Args:
+            discovery_info: DHCP discovery info (ip, hostname, macaddress)
+
+        Returns:
+            ConfigFlowResult: Confirmation form, or an abort
+
+        """
+        host = discovery_info.ip
+        _LOGGER.debug("DHCP discovery for %s (%s)", host, discovery_info.hostname)
+
+        try:
+            info = await validate_input(self.hass, {CONF_HOST: host})
+        except NerdQAxeConnectionError:
+            return self.async_abort(reason="cannot_connect")
+        except Exception:
+            _LOGGER.exception("Unexpected error during DHCP discovery")
+            return self.async_abort(reason="unknown")
+
+        await self.async_set_unique_id(info["mac_addr"])
+        self._abort_if_unique_id_configured(updates={CONF_HOST: host})
+
+        self._host = host
+        self._discovered_title = info["title"]
+        self.context["title_placeholders"] = {"name": info["title"]}
+        return await self.async_step_discovery_confirm()
+
+    async def async_step_discovery_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm setup of a DHCP-discovered miner.
+
+        Args:
+            user_input: User confirmation (None until the form is submitted)
+
+        Returns:
+            ConfigFlowResult: Created entry, or the confirmation form
+
+        """
+        if user_input is not None:
+            assert self._host is not None  # set in async_step_dhcp
+            return self.async_create_entry(
+                title=self._discovered_title or DEFAULT_NAME,
+                data={CONF_HOST: self._host},
+            )
+
+        self._set_confirm_only()
+        return self.async_show_form(
+            step_id="discovery_confirm",
+            description_placeholders={"name": self._discovered_title or ""},
         )
 
     async def async_step_reconfigure(

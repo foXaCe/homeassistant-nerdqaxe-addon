@@ -3,6 +3,11 @@
   "name": "NerdQAxe+ Miner",
   "codeowners": ["@foXaCe"],
   "config_flow": true,
+  "dhcp": [
+    {
+      "hostname": "nerd*"
+    }
+  ],
   "documentation": "https://github.com/foXaCe/homeassistant-nerdqaxe-addon",
   "integration_type": "device",
   "iot_class": "local_polling",

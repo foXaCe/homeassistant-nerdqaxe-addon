@@ -20,6 +20,10 @@
         "data_description": {
           "host": "La nouvelle adresse IP ou le nouveau nom d'hôte du mineur"
         }
+      },
+      "discovery_confirm": {
+        "title": "Mineur NerdQAxe+ découvert",
+        "description": "Voulez-vous configurer le mineur NerdQAxe+ {name} ?"
       }
     },
     "error": {
