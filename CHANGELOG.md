@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-06-25
+
 ### Changed
 - The ASIC frequency control now reaches **1000 MHz** (was 800), so NerdQX
   boards can use their full overclock range. The miner firmware still enforces

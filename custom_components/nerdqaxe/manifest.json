@@ -14,5 +14,5 @@
   "issue_tracker": "https://github.com/foXaCe/homeassistant-nerdqaxe-addon/issues",
   "loggers": ["custom_components.nerdqaxe"],
   "requirements": ["aiohttp>=3.8.0"],
-  "version": "2.3.0"
+  "version": "2.3.1"
 }
