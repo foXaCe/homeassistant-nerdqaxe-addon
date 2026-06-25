@@ -120,7 +120,7 @@ The integration automatically creates the following sensors:
 
 ### Control and Updates
 - `button.nerdqaxe_restart` - Button to restart the miner
-- `number.nerdqaxe_asic_frequency` - ASIC frequency control (400-800 MHz)
+- `number.nerdqaxe_asic_frequency` - ASIC frequency control (400-1000 MHz)
 - `number.nerdqaxe_core_voltage` - Core voltage control (1000-1300 mV)
 - `update.nerdqaxe_firmware_update` - Firmware update entity (automatically checks for new versions on GitHub)
 
@@ -411,7 +411,7 @@ Defines the restart button:
 
 #### `number.py`
 Number entities for performance control:
-- ASIC frequency control (400-800 MHz)
+- ASIC frequency control (400-1000 MHz)
 - Core voltage control (1000-1300 mV)
 - Calls the miner's `PATCH /api/system` API
 - Automatically refreshes coordinator after changes

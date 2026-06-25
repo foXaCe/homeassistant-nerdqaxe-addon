@@ -188,6 +188,34 @@ async def test_number_set_core_voltage_failure(
             )
 
 
+async def test_frequency_overclock_range(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """The ASIC frequency entity allows overclock values up to 1000 MHz (NerdQX)."""
+    mock_session = create_mock_session(
+        status=200,
+        json_data={**MOCK_SYSTEM_INFO, **MOCK_ASIC_DATA},
+    )
+
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        freq_entity = next(
+            e
+            for e in hass.states.async_entity_ids("number")
+            if "frequency" in e.lower()
+        )
+        attrs = hass.states.get(freq_entity).attributes
+        assert attrs["min"] == 400
+        assert attrs["max"] == 1000
+        assert attrs["step"] == 1
+
+
 async def test_number_native_value_no_data(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
