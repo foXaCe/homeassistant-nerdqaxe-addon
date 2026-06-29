@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The ASIC frequency control lower bound is now **1 MHz** (was 400), so you can
+  underclock for power/heat management straight from Home Assistant instead of
+  falling back to `curl`. The miner firmware still enforces the real per-ASIC
+  limit (#20)
+
 ## [2.3.1] - 2026-06-25
 
 ### Changed

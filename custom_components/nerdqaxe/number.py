@@ -62,17 +62,17 @@ class NerdQAxeFrequencyNumber(
 ):
     """Representation of NerdQAxe+ ASIC frequency control.
 
-    Number entity for adjusting the mining ASIC frequency between 400-1000 MHz
-    in 1 MHz steps (overclock-friendly; NerdQX boards reach 1000). The miner
-    firmware keeps its own per-ASIC overheat protection. Changes are applied
-    via ``PATCH /api/system``.
+    Number entity for adjusting the mining ASIC frequency between 1-1000 MHz
+    in 1 MHz steps. The wide range lets you underclock for power/heat
+    management or overclock (e.g. NerdQX reaches 1000); the miner firmware
+    keeps its own per-ASIC limits. Changes are applied via ``PATCH /api/system``.
     """
 
     __slots__ = ()
 
     _attr_icon = "mdi:sine-wave"
     _attr_mode = NumberMode.BOX
-    _attr_native_min_value = 400
+    _attr_native_min_value = 1
     _attr_native_max_value = 1000
     _attr_native_step = 1
     _attr_native_unit_of_measurement = "MHz"
@@ -107,7 +107,7 @@ class NerdQAxeFrequencyNumber(
         """Set new ASIC frequency value.
 
         Args:
-            value: New frequency in MHz (400-1000, step 1)
+            value: New frequency in MHz (1-1000, step 1)
 
         Raises:
             NerdQAxeApiError: If the API command fails
