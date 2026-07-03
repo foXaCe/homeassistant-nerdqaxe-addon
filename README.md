@@ -355,6 +355,62 @@ automation:
           message: "⚠️ Temperature high, reducing frequency to 450 MHz"
 ```
 
+### Eco / Night Mode (low power)
+
+The firmware has **no true software "off"** — the `shutdown` field is read-only,
+and cutting power with an external relay also cuts the Wi-Fi, so Home Assistant
+loses control and can't turn the miner back on. You can, however, cut most of
+the draw by **underclocking** with the ASIC Frequency and Core Voltage entities.
+
+Measured on a NerdAxe Gamma:
+
+| Mode | Frequency / Voltage | Power |
+|------|---------------------|------:|
+| Full | 500 MHz / 1120 mV | ~18.5 W |
+| Eco  | 100 MHz / 1000 mV | ~6.3 W |
+
+That's roughly **−66 %**. Around **6 W is the floor** (the ESP32, VR and fan keep
+running), so software can't reach 0 W — for that you need to physically cut power.
+
+Example: drop to eco when there's no solar, restore when it comes back (replace
+`sensor.solar_power` with your PV sensor):
+
+```yaml
+automation:
+  - alias: "NerdQAxe eco when no solar"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.solar_power
+        below: 50
+    action:
+      - action: number.set_value
+        target:
+          entity_id: number.nerdqaxe_asic_frequency
+        data:
+          value: 100
+      - action: number.set_value
+        target:
+          entity_id: number.nerdqaxe_core_voltage
+        data:
+          value: 1000
+  - alias: "NerdQAxe full power when solar returns"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.solar_power
+        above: 200
+    action:
+      - action: number.set_value
+        target:
+          entity_id: number.nerdqaxe_asic_frequency
+        data:
+          value: 500
+      - action: number.set_value
+        target:
+          entity_id: number.nerdqaxe_core_voltage
+        data:
+          value: 1150
+```
+
 ### Firmware Updates
 
 The `update.nerdqaxe_firmware_update` entity automatically checks for new versions on GitHub:
