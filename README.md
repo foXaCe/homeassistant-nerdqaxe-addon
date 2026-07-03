@@ -90,6 +90,7 @@ The integration automatically creates the following sensors:
 ### Temperature
 - `sensor.nerdqaxe_temperature` - Chip temperature (°C)
 - `sensor.nerdqaxe_vr_temperature` - Voltage regulator temperature (°C)
+- `sensor.nerdqaxe_asic_1_temperature`, `sensor.nerdqaxe_asic_2_temperature`, … - Per-ASIC temperature on multi-ASIC boards such as the NerdQX (°C, one per chip; only created when the board actually reports them)
 
 ### Power
 - `sensor.nerdqaxe_power` - Power consumption (W)
@@ -121,7 +122,7 @@ The integration automatically creates the following sensors:
 ### Control and Updates
 - `button.nerdqaxe_restart` - Button to restart the miner
 - `number.nerdqaxe_asic_frequency` - ASIC frequency control (1-1000 MHz)
-- `number.nerdqaxe_core_voltage` - Core voltage control (1000-1300 mV)
+- `number.nerdqaxe_core_voltage` - Core voltage control (1000-1350 mV)
 - `update.nerdqaxe_firmware_update` - Firmware update entity (automatically checks for new versions on GitHub)
 
 ## Installation
@@ -412,7 +413,7 @@ Defines the restart button:
 #### `number.py`
 Number entities for performance control:
 - ASIC frequency control (1-1000 MHz)
-- Core voltage control (1000-1300 mV)
+- Core voltage control (1000-1350 mV)
 - Calls the miner's `PATCH /api/system` API
 - Automatically refreshes coordinator after changes
 

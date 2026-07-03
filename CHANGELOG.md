@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Per-ASIC temperature sensors for multi-ASIC boards such as the **NerdQX**,
+  reading the `asicTemps` array (one sensor per chip). They are created only
+  when the board actually reports per-ASIC temperatures — boards that send
+  them as `0` get none (#20)
+
+### Changed
+- The core voltage control now reaches **1350 mV** (was 1300) (#20)
+
 ## [2.3.2] - 2026-06-29
 
 ### Changed
