@@ -292,3 +292,55 @@ async def test_second_fan_sensors_absent_on_single_fan(
     assert not any(
         e.unique_id.endswith(("_fan_rpm_2", "_fan_speed_2")) for e in entries
     )
+
+
+async def test_per_asic_temp_sensors_created(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Multi-ASIC boards (e.g. NerdQX) expose one temperature sensor per chip."""
+    multi_asic = {
+        **MOCK_SYSTEM_INFO,
+        **MOCK_ASIC_DATA,
+        "asicCount": 3,
+        "asicTemps": [58.5, 60, 59],
+    }
+    mock_session = create_mock_session(status=200, json_data=multi_asic)
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    ent_reg = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(ent_reg, mock_config_entry.entry_id)
+    asic_temps = [e for e in entries if "_asic_temp_" in e.unique_id]
+    assert len(asic_temps) == 3
+
+    first = next(e for e in entries if e.unique_id.endswith("_asic_temp_0"))
+    assert float(hass.states.get(first.entity_id).state) == 58.5
+
+
+async def test_per_asic_temp_sensors_absent_when_zero(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Boards reporting asicTemps as all-zero get no per-ASIC sensors."""
+    single = {
+        **MOCK_SYSTEM_INFO,
+        **MOCK_ASIC_DATA,
+        "asicCount": 1,
+        "asicTemps": [0],
+    }
+    mock_session = create_mock_session(status=200, json_data=single)
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    ent_reg = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(ent_reg, mock_config_entry.entry_id)
+    assert not any("_asic_temp_" in e.unique_id for e in entries)

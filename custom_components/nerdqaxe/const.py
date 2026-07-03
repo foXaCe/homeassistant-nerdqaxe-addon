@@ -49,6 +49,9 @@ ATTR_HASHRATE_1H: Final = "hashRate_1h"
 ATTR_HASHRATE_1D: Final = "hashRate_1d"
 ATTR_TEMP: Final = "temp"
 ATTR_VR_TEMP: Final = "vrTemp"
+# Per-ASIC temperatures (one entry per chip); non-zero only on boards that
+# actually sense them, such as the NerdQX.
+ATTR_ASIC_TEMPS: Final = "asicTemps"
 ATTR_POWER: Final = "power"
 ATTR_VOLTAGE: Final = "voltage"
 ATTR_CURRENT: Final = "current"

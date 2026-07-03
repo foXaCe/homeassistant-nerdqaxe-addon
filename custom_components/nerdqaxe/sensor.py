@@ -28,6 +28,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import NerdQAxeConfigEntry, NerdQAxeDataUpdateCoordinator
 from .const import (
+    ATTR_ASIC_TEMPS,
     ATTR_BEST_DIFF,
     ATTR_BEST_SESSION_DIFF,
     ATTR_CORE_VOLTAGE,
@@ -315,6 +316,22 @@ def _has_second_fan(data: dict[str, Any] | None) -> bool:
     return bool(data.get(ATTR_FAN_RPM_2) or data.get(ATTR_FAN_SPEED_2))
 
 
+def _asic_temp_count(data: dict[str, Any] | None) -> int:
+    """Return how many per-ASIC temperature sensors to create.
+
+    Multi-ASIC boards (e.g. NerdQX) report a temperature per chip in the
+    ``asicTemps`` array. Boards without per-ASIC sensing report all zeros (or
+    omit the field), so only create sensors when at least one reading is
+    non-zero.
+    """
+    if not data:
+        return 0
+    temps = data.get(ATTR_ASIC_TEMPS)
+    if not isinstance(temps, list) or not any(temps):
+        return 0
+    return len(temps)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: NerdQAxeConfigEntry,
@@ -344,6 +361,13 @@ async def async_setup_entry(
             NerdQAxeSensor(coordinator, description)
             for description in SECONDARY_FAN_SENSORS
         )
+
+    # Multi-ASIC boards (e.g. NerdQX) report a temperature per chip; add those
+    # sensors only when the board actually measures them.
+    entities.extend(
+        NerdQAxeAsicTempSensor(coordinator, index)
+        for index in range(_asic_temp_count(coordinator.data))
+    )
 
     async_add_entities(entities)
     _LOGGER.info(
@@ -480,3 +504,55 @@ class NerdQAxeUptimeSensor(
             return f"{hours}{units['hour']} {minutes}{units['minute']}"
         else:
             return f"{minutes}{units['minute']}"
+
+
+class NerdQAxeAsicTempSensor(
+    CoordinatorEntity[NerdQAxeDataUpdateCoordinator], SensorEntity
+):
+    """Per-ASIC temperature sensor.
+
+    Multi-ASIC boards (e.g. NerdQX) report a temperature per chip in the
+    ``asicTemps`` array; one sensor is created per entry. The name is resolved
+    from ``translation_key`` with an ``index`` placeholder so it stays
+    localized.
+    """
+
+    __slots__ = ("_index",)
+
+    _attr_has_entity_name = True
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 1
+
+    def __init__(self, coordinator: NerdQAxeDataUpdateCoordinator, index: int) -> None:
+        """Initialize the per-ASIC temperature sensor.
+
+        Args:
+            coordinator: Data update coordinator instance
+            index: Zero-based ASIC index into ``asicTemps``
+
+        """
+        super().__init__(coordinator)
+        self._index = index
+        self._attr_unique_id = f"{coordinator.unique_id_base}_asic_temp_{index}"
+        self._attr_translation_key = "asic_temperature"
+        self._attr_translation_placeholders = {"index": str(index + 1)}
+        self._attr_device_info = coordinator.get_device_info()
+
+    @property
+    def native_value(self) -> StateType:
+        """Return this ASIC's temperature, or None if unavailable.
+
+        Returns:
+            Temperature in °C, or None
+
+        """
+        data = self.coordinator.data
+        if not data:
+            return None
+        temps = data.get(ATTR_ASIC_TEMPS)
+        if not isinstance(temps, list) or self._index >= len(temps):
+            return None
+        value = temps[self._index]
+        return value if isinstance(value, (int, float)) else None

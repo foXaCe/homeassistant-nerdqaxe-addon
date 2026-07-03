@@ -72,6 +72,9 @@
       "vr_temperature": {
         "name": "VR Temperature"
       },
+      "asic_temperature": {
+        "name": "ASIC {index} Temperature"
+      },
       "power": {
         "name": "Power"
       },
