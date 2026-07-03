@@ -216,6 +216,32 @@ async def test_frequency_full_range(
         assert attrs["step"] == 1
 
 
+async def test_core_voltage_range(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """The core voltage entity allows values up to 1350 mV."""
+    mock_session = create_mock_session(
+        status=200,
+        json_data={**MOCK_SYSTEM_INFO, **MOCK_ASIC_DATA},
+    )
+
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        voltage_entity = next(
+            e for e in hass.states.async_entity_ids("number") if "voltage" in e.lower()
+        )
+        attrs = hass.states.get(voltage_entity).attributes
+        assert attrs["min"] == 1000
+        assert attrs["max"] == 1350
+        assert attrs["step"] == 5
+
+
 async def test_number_native_value_no_data(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,

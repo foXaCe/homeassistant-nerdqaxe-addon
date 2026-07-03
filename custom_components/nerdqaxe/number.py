@@ -142,7 +142,7 @@ class NerdQAxeCoreVoltageNumber(
 ):
     """Representation of NerdQAxe+ core voltage control.
 
-    Number entity for adjusting the ASIC core voltage between 1000-1300 mV
+    Number entity for adjusting the ASIC core voltage between 1000-1350 mV
     in 5 mV steps. Changes are applied via ``PATCH /api/system``.
     """
 
@@ -151,7 +151,7 @@ class NerdQAxeCoreVoltageNumber(
     _attr_icon = "mdi:flash"
     _attr_mode = NumberMode.BOX
     _attr_native_min_value = 1000
-    _attr_native_max_value = 1300
+    _attr_native_max_value = 1350
     _attr_native_step = 5
     _attr_native_unit_of_measurement = "mV"
     _attr_has_entity_name = True
@@ -185,7 +185,7 @@ class NerdQAxeCoreVoltageNumber(
         """Set new core voltage value.
 
         Args:
-            value: New voltage in mV (1000-1300, step 5)
+            value: New voltage in mV (1000-1350, step 5)
 
         Raises:
             NerdQAxeApiError: If the API command fails
