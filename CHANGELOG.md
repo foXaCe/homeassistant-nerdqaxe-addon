@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-08-09
+
+### Changed
+- Faster Home Assistant startup: the firmware update entity's initial GitHub
+  release check now runs as a background task instead of blocking config entry
+  setup on an external network call (#29)
+- Shorter coordinator timeouts (connect 10→5s, total 30→15s) suited to a LAN
+  device, so a down miner fails faster on startup (#29)
+
 ## [2.4.0] - 2026-07-03
 
 ### Added
