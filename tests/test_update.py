@@ -1,6 +1,6 @@
 """Test the NerdQAxe+ Miner firmware update entity."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import aiohttp
 from multidict import CIMultiDict
@@ -221,3 +221,28 @@ async def test_check_latest_release_no_matching_firmware() -> None:
 def test_normalize_device_model(raw: str, expected: str) -> None:
     """Device model normalization resolves to the factory image name."""
     assert normalize_device_model(raw) == expected
+
+
+async def test_added_to_hass_schedules_background_release_check() -> None:
+    """The initial release check runs in background, not blocking startup."""
+    entity = _make_update_entity(_session_with_get([]))
+    entity.hass = MagicMock()
+    entity.entity_id = "update.nerdqaxe_update"
+
+    # super().async_added_to_hass() registers a coordinator listener on remove.
+    remove_callbacks: list[object] = []
+    entity.async_on_remove = remove_callbacks.append
+
+    with patch(
+        "custom_components.nerdqaxe.update.NerdQAxeUpdateEntity."
+        "_async_check_latest_release",
+        new=MagicMock(return_value=MagicMock()),
+    ):
+        await entity.async_added_to_hass()
+
+    # The GitHub check must be scheduled as a background task, not awaited.
+    entity.hass.async_create_background_task.assert_called_once()
+    name = entity.hass.async_create_background_task.call_args.kwargs["name"]
+    assert "initial release check" in name
+    # Periodic 6h timer + coordinator listener are both registered.
+    assert len(remove_callbacks) == 2

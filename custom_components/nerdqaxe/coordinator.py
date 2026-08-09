@@ -35,9 +35,11 @@ _LOGGER = logging.getLogger(__name__)
 # Debounce requests by 1 second to avoid hammering the device
 REQUEST_REFRESH_DEBOUNCE = 1.0
 
-# Timeout configuration (seconds)
-TIMEOUT_CONNECT = 10  # Time to establish connection
-TIMEOUT_TOTAL = 30  # Total request time including response
+# Timeout configuration (seconds). The miner is a LAN device, so keep the
+# timeouts short: a long connect timeout delays Home Assistant startup
+# (the first refresh is awaited during config entry setup).
+TIMEOUT_CONNECT = 5  # Time to establish connection
+TIMEOUT_TOTAL = 15  # Total request time including response
 
 
 class NerdQAxeDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
