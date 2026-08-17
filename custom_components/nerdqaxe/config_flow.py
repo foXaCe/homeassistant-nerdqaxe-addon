@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
 import aiohttp
-import async_timeout
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -57,7 +57,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     try:
         async with (
-            async_timeout.timeout(10),
+            asyncio.timeout(10),
             session.get(f"http://{host}{API_SYSTEM_INFO}") as response,
         ):
             response.raise_for_status()

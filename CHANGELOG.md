@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The integration imported `async_timeout`, which `manifest.json` never
+  declared as a requirement. It used to be installed as a transitive
+  dependency, but `aiohttp` stopped requiring it on Python 3.11 and later, so
+  on a recent Home Assistant it is only present if some other integration
+  happens to pull it in — otherwise the update, button, number and config flow
+  modules failed to import. All four now use the standard library's
+  `asyncio.timeout`, which behaves identically and needs no dependency
+
 ## [2.5.0] - 2026-08-17
 
 ### Added

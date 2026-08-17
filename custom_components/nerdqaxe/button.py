@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import aiohttp
-import async_timeout
 from homeassistant.components.button import ButtonDeviceClass, ButtonEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -90,7 +90,7 @@ class NerdQAxeRestartButton(
         _LOGGER.debug("Restart button pressed for %s", self.coordinator.host)
         try:
             async with (
-                async_timeout.timeout(10),
+                asyncio.timeout(10),
                 self.coordinator.session.post(
                     f"{self.coordinator.base_url}{API_SYSTEM_RESTART}"
                 ) as response,

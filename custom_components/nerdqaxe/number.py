@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import aiohttp
-import async_timeout
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -118,7 +118,7 @@ class NerdQAxeFrequencyNumber(
         )
         try:
             async with (
-                async_timeout.timeout(10),
+                asyncio.timeout(10),
                 self.coordinator.session.patch(
                     f"{self.coordinator.base_url}{API_SYSTEM}",
                     json={"frequency": int(value)},
@@ -196,7 +196,7 @@ class NerdQAxeCoreVoltageNumber(
         )
         try:
             async with (
-                async_timeout.timeout(10),
+                asyncio.timeout(10),
                 self.coordinator.session.patch(
                     f"{self.coordinator.base_url}{API_SYSTEM}",
                     json={"coreVoltage": int(value)},

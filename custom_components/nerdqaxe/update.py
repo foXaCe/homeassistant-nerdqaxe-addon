@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 from http import HTTPStatus
 import logging
 from typing import Any
 
 import aiohttp
-import async_timeout
 from homeassistant.components.update import (
     UpdateDeviceClass,
     UpdateEntity,
@@ -158,7 +158,7 @@ class NerdQAxeUpdateEntity(
     async def _async_check_latest_release(self) -> None:
         """Check GitHub for the latest release."""
         try:
-            async with async_timeout.timeout(10):
+            async with asyncio.timeout(10):
                 async with self.coordinator.session.get(GITHUB_API_URL) as response:
                     response.raise_for_status()
                     releases = await response.json()
@@ -277,7 +277,7 @@ class NerdQAxeUpdateEntity(
         url = f"{self.coordinator.base_url}{API_OTA_GITHUB}"
         try:
             async with (
-                async_timeout.timeout(OTA_TIMEOUT_SECONDS),
+                asyncio.timeout(OTA_TIMEOUT_SECONDS),
                 self.coordinator.session.post(
                     url,
                     json={"url": self._download_url},
