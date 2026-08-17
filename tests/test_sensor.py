@@ -1,6 +1,6 @@
 """Test the NerdQAxe+ Miner sensor entities."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
@@ -9,6 +9,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.nerdqaxe.const import DOMAIN
+from custom_components.nerdqaxe.sensor import SENSORS, NerdQAxeSensor
 
 from .conftest import (
     MOCK_ASIC_DATA,
@@ -344,3 +345,147 @@ async def test_per_asic_temp_sensors_absent_when_zero(
     ent_reg = er.async_get(hass)
     entries = er.async_entries_for_config_entry(ent_reg, mock_config_entry.entry_id)
     assert not any("_asic_temp_" in e.unique_id for e in entries)
+
+
+def _make_sensor(key: str, data: dict | None) -> NerdQAxeSensor:
+    """Build a sensor backed by a mock coordinator."""
+    coordinator = MagicMock()
+    coordinator.host = MOCK_HOST
+    coordinator.data = data
+    coordinator.get_device_info.return_value = {"identifiers": {(DOMAIN, MOCK_HOST)}}
+    description = next(d for d in SENSORS if d.key == key)
+    return NerdQAxeSensor(coordinator, description)
+
+
+def test_extra_attributes_without_data() -> None:
+    """A sensor with attributes reports none while the miner is unreachable."""
+    assert _make_sensor("pool_url", None).extra_state_attributes is None
+
+
+def test_extra_attributes_absent_on_plain_sensors() -> None:
+    """Sensors that declare no attributes_fn expose no extra attributes."""
+    sensor = _make_sensor("hashrate", {**MOCK_ASIC_DATA})
+    assert sensor.extra_state_attributes is None
+
+
+async def test_pool_sensors_report_active_pool(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """The pool sensors report the endpoint of the pool being mined."""
+    mock_session = create_mock_session(
+        status=200,
+        json_data={**MOCK_SYSTEM_INFO, **MOCK_ASIC_DATA},
+    )
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    ent_reg = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(ent_reg, mock_config_entry.entry_id)
+
+    url = next(e for e in entries if e.unique_id.endswith("_pool_url"))
+    port = next(e for e in entries if e.unique_id.endswith("_pool_port"))
+    assert hass.states.get(url.entity_id).state == "public-pool.io"
+    assert hass.states.get(port.entity_id).state == "21496"
+
+    # Failover mode: no second pool is being mined, so no secondary attribute.
+    attributes = hass.states.get(url.entity_id).attributes
+    assert attributes["pool_mode"] == "failover"
+    assert "secondary_url" not in attributes
+
+
+async def test_pool_user_sensor_disabled_by_default(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """The pool user embeds the payout address and stays opt-in."""
+    mock_session = create_mock_session(
+        status=200,
+        json_data={**MOCK_SYSTEM_INFO, **MOCK_ASIC_DATA},
+    )
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    ent_reg = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(ent_reg, mock_config_entry.entry_id)
+
+    user = next(e for e in entries if e.unique_id.endswith("_pool_user"))
+    assert user.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert hass.states.get(user.entity_id) is None
+
+
+async def test_pool_sensors_follow_failover(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """After a failover the sensors report the fallback endpoint."""
+    failed_over = {
+        **MOCK_SYSTEM_INFO,
+        **MOCK_ASIC_DATA,
+        "stratum": {
+            "activePoolMode": 0,
+            "usingFallback": True,
+            "pools": [
+                {"active": False, "connected": False},
+                {"active": True, "connected": True},
+            ],
+        },
+    }
+    mock_session = create_mock_session(status=200, json_data=failed_over)
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    ent_reg = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(ent_reg, mock_config_entry.entry_id)
+
+    url = next(e for e in entries if e.unique_id.endswith("_pool_url"))
+    port = next(e for e in entries if e.unique_id.endswith("_pool_port"))
+    assert hass.states.get(url.entity_id).state == "solo.ckpool.org"
+    assert hass.states.get(port.entity_id).state == "3333"
+
+
+async def test_pool_url_exposes_second_pool_in_dual_mode(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Dual-pool mode mines both pools; the second one is an attribute."""
+    dual = {
+        **MOCK_SYSTEM_INFO,
+        **MOCK_ASIC_DATA,
+        "stratum": {
+            "activePoolMode": 1,
+            "pools": [
+                {"active": True, "connected": True},
+                {"active": True, "connected": True},
+            ],
+        },
+    }
+    mock_session = create_mock_session(status=200, json_data=dual)
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    ent_reg = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(ent_reg, mock_config_entry.entry_id)
+
+    url = next(e for e in entries if e.unique_id.endswith("_pool_url"))
+    state = hass.states.get(url.entity_id)
+    assert state.state == "public-pool.io"
+    assert state.attributes["pool_mode"] == "dual"
+    assert state.attributes["secondary_url"] == "solo.ckpool.org"
+    assert state.attributes["secondary_port"] == 3333

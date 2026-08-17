@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 import logging
 from typing import Any
@@ -35,6 +35,9 @@ from .const import (
     ATTR_CORE_VOLTAGE_ACTUAL,
     ATTR_CURRENT,
     ATTR_DEVICE_MODEL,
+    ATTR_FALLBACK_STRATUM_PORT,
+    ATTR_FALLBACK_STRATUM_URL,
+    ATTR_FALLBACK_STRATUM_USER,
     ATTR_FAN_COUNT,
     ATTR_FAN_RPM,
     ATTR_FAN_RPM_2,
@@ -51,6 +54,9 @@ from .const import (
     ATTR_POWER,
     ATTR_SHARES_ACCEPTED,
     ATTR_SHARES_REJECTED,
+    ATTR_STRATUM_PORT,
+    ATTR_STRATUM_URL,
+    ATTR_STRATUM_USER,
     ATTR_TEMP,
     ATTR_TOTAL_FOUND_BLOCKS,
     ATTR_UPTIME,
@@ -58,6 +64,13 @@ from .const import (
     ATTR_VOLTAGE,
     ATTR_VR_TEMP,
     ATTR_WIFI_RSSI,
+    POOL_MODE_DUAL,
+)
+from .pool import (
+    active_pool_field,
+    clean_value,
+    pool_mode,
+    pool_mode_name,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -80,15 +93,32 @@ def _clean_version(data: dict[str, Any]) -> StateType:
     return version
 
 
+def _pool_url_attributes(data: dict[str, Any]) -> dict[str, Any]:
+    """Return the pool mode and, in dual-pool mode, the second pool mined.
+
+    In dual-pool mode both pools mine simultaneously; the state reports the
+    primary one, so the second endpoint is only reachable as an attribute.
+    """
+    attributes: dict[str, Any] = {"pool_mode": pool_mode_name(data)}
+
+    if pool_mode(data) == POOL_MODE_DUAL:
+        attributes["secondary_url"] = clean_value(data.get(ATTR_FALLBACK_STRATUM_URL))
+        attributes["secondary_port"] = clean_value(data.get(ATTR_FALLBACK_STRATUM_PORT))
+
+    return attributes
+
+
 @dataclass(frozen=True, kw_only=True)
 class NerdQAxeSensorEntityDescription(SensorEntityDescription):
     """Describes a NerdQAxe+ sensor entity.
 
     ``value_fn`` extracts the native value from the coordinator data dict, which
-    keeps all per-sensor logic declarative and in one place.
+    keeps all per-sensor logic declarative and in one place. ``attributes_fn``
+    is optional and only set by sensors that carry extra state attributes.
     """
 
     value_fn: Callable[[dict[str, Any]], StateType]
+    attributes_fn: Callable[[dict[str, Any]], Mapping[str, Any]] | None = None
 
 
 SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
@@ -241,6 +271,34 @@ SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
         icon="mdi:cube-outline",
         state_class=SensorStateClass.TOTAL,
         value_fn=lambda data: data.get(ATTR_TOTAL_FOUND_BLOCKS),
+    ),
+    # Mining pool (endpoint of the pool currently being mined)
+    NerdQAxeSensorEntityDescription(
+        key="pool_url",
+        icon="mdi:pickaxe",
+        value_fn=lambda data: active_pool_field(
+            data, ATTR_STRATUM_URL, ATTR_FALLBACK_STRATUM_URL
+        ),
+        attributes_fn=_pool_url_attributes,
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="pool_port",
+        icon="mdi:ethernet",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: active_pool_field(
+            data, ATTR_STRATUM_PORT, ATTR_FALLBACK_STRATUM_PORT
+        ),
+    ),
+    NerdQAxeSensorEntityDescription(
+        key="pool_user",
+        icon="mdi:account-key",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        # The pool user embeds the payout address, so keep it opt-in rather
+        # than recording it and shipping it in every backup by default.
+        entity_registry_enabled_default=False,
+        value_fn=lambda data: active_pool_field(
+            data, ATTR_STRATUM_USER, ATTR_FALLBACK_STRATUM_USER
+        ),
     ),
     # Device information
     NerdQAxeSensorEntityDescription(
@@ -417,6 +475,19 @@ class NerdQAxeSensor(CoordinatorEntity[NerdQAxeDataUpdateCoordinator], SensorEnt
         if not self.coordinator.data:
             return None
         return self.entity_description.value_fn(self.coordinator.data)
+
+    @property
+    def extra_state_attributes(self) -> Mapping[str, Any] | None:
+        """Return extra attributes for sensors declaring an ``attributes_fn``.
+
+        Returns:
+            Extra state attributes, or None if the sensor has none
+
+        """
+        attributes_fn = self.entity_description.attributes_fn
+        if attributes_fn is None or not self.coordinator.data:
+            return None
+        return attributes_fn(self.coordinator.data)
 
 
 class NerdQAxeUptimeSensor(

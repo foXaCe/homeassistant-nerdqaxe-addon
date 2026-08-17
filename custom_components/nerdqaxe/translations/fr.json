@@ -137,11 +137,23 @@
       },
       "version": {
         "name": "Version du firmware"
+      },
+      "pool_url": {
+        "name": "URL du pool"
+      },
+      "pool_port": {
+        "name": "Port du pool"
+      },
+      "pool_user": {
+        "name": "Utilisateur du pool"
       }
     },
     "binary_sensor": {
       "stratum_connected": {
         "name": "Connexion Stratum"
+      },
+      "using_fallback_pool": {
+        "name": "Pool de secours actif"
       }
     },
     "button": {

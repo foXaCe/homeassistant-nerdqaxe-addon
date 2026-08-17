@@ -71,6 +71,34 @@ ATTR_STRATUM_CONNECTED: Final = "isStratumConnected"
 ATTR_STRATUM: Final = "stratum"
 ATTR_STRATUM_POOLS: Final = "pools"
 ATTR_POOL_CONNECTED: Final = "connected"
+# Marks which pool is currently mining. In failover mode exactly one entry is
+# active; in dual-pool mode both are.
+ATTR_POOL_ACTIVE: Final = "active"
+ATTR_ACTIVE_POOL_MODE: Final = "activePoolMode"
+# Set by the failover manager only; absent in dual-pool mode.
+ATTR_USING_FALLBACK: Final = "usingFallback"
+# Legacy flat equivalent, for firmware predating ``stratum.usingFallback``.
+ATTR_USING_FALLBACK_LEGACY: Final = "isUsingFallbackStratum"
+
+# Pool endpoints. The firmware reports these as flat fields (the nested
+# ``stratum.pools[]`` array carries runtime state but no address), so the
+# active pool's endpoint is resolved by crossing the two.
+ATTR_STRATUM_URL: Final = "stratumURL"
+ATTR_STRATUM_PORT: Final = "stratumPort"
+ATTR_STRATUM_USER: Final = "stratumUser"
+ATTR_FALLBACK_STRATUM_URL: Final = "fallbackStratumURL"
+ATTR_FALLBACK_STRATUM_PORT: Final = "fallbackStratumPort"
+ATTR_FALLBACK_STRATUM_USER: Final = "fallbackStratumUser"
+
+# ``stratum.activePoolMode`` values, mirroring the firmware's
+# ``StratumManager::PoolMode`` enum.
+POOL_MODE_FAILOVER: Final = 0
+POOL_MODE_DUAL: Final = 1
+POOL_MODE_NAMES: Final = {POOL_MODE_FAILOVER: "failover", POOL_MODE_DUAL: "dual"}
+
+# Indices into ``stratum.pools[]``: 0 is the primary pool, 1 the fallback one.
+POOL_INDEX_PRIMARY: Final = 0
+POOL_INDEX_FALLBACK: Final = 1
 ATTR_DEVICE_MODEL: Final = "deviceModel"
 ATTR_HOSTNAME: Final = "hostname"
 ATTR_WIFI_RSSI: Final = "wifiRSSI"

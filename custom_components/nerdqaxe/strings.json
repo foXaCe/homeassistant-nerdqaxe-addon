@@ -137,11 +137,23 @@
       },
       "version": {
         "name": "Firmware Version"
+      },
+      "pool_url": {
+        "name": "Pool URL"
+      },
+      "pool_port": {
+        "name": "Pool Port"
+      },
+      "pool_user": {
+        "name": "Pool User"
       }
     },
     "binary_sensor": {
       "stratum_connected": {
         "name": "Stratum Connected"
+      },
+      "using_fallback_pool": {
+        "name": "Using Fallback Pool"
       }
     },
     "button": {

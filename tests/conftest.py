@@ -41,15 +41,28 @@ MOCK_ASIC_DATA = {
     "stratum": {
         "poolMode": 0,
         "activePoolMode": 0,
+        "usingFallback": False,
         "pools": [
             {
+                "active": True,
                 "connected": True,
                 "poolDifficulty": 10000,
                 "accepted": 1000,
                 "rejected": 5,
-            }
+            },
+            {
+                "active": False,
+                "connected": False,
+            },
         ],
     },
+    # Pool endpoints are reported as flat fields, outside stratum.pools[]
+    "stratumURL": "public-pool.io",
+    "stratumPort": 21496,
+    "stratumUser": "bc1qprimary.nerdqaxe",
+    "fallbackStratumURL": "solo.ckpool.org",
+    "fallbackStratumPort": 3333,
+    "fallbackStratumUser": "bc1qfallback.nerdqaxe",
     "foundBlocks": 0,
     "totalFoundBlocks": 0,
     "coreVoltage": 1200,

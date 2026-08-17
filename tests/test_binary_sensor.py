@@ -7,7 +7,10 @@ from homeassistant.core import HomeAssistant
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.nerdqaxe.binary_sensor import NerdQAxeStratumSensor
+from custom_components.nerdqaxe.binary_sensor import (
+    BINARY_SENSORS,
+    NerdQAxeBinarySensor,
+)
 from custom_components.nerdqaxe.const import DOMAIN
 
 from .conftest import (
@@ -31,13 +34,16 @@ def mock_config_entry(hass: HomeAssistant) -> MockConfigEntry:
     return entry
 
 
-def _make_sensor(data: dict | None) -> NerdQAxeStratumSensor:
-    """Build a stratum binary sensor backed by a mock coordinator."""
+def _make_sensor(
+    data: dict | None, key: str = "stratum_connected"
+) -> NerdQAxeBinarySensor:
+    """Build a binary sensor backed by a mock coordinator."""
     coordinator = MagicMock()
     coordinator.host = MOCK_HOST
     coordinator.data = data
     coordinator.get_device_info.return_value = {"identifiers": {(DOMAIN, MOCK_HOST)}}
-    return NerdQAxeStratumSensor(coordinator)
+    description = next(d for d in BINARY_SENSORS if d.key == key)
+    return NerdQAxeBinarySensor(coordinator, description)
 
 
 def test_is_on_with_connected_pool() -> None:
@@ -86,6 +92,38 @@ def test_is_off_without_data() -> None:
     """No coordinator data means off rather than an error."""
     sensor = _make_sensor(None)
     assert sensor.is_on is False
+
+
+def test_using_fallback_pool_on() -> None:
+    """The failover sensor follows the nested usingFallback flag."""
+    sensor = _make_sensor(
+        {"stratum": {"usingFallback": True}},
+        key="using_fallback_pool",
+    )
+    assert sensor.is_on is True
+
+
+def test_using_fallback_pool_off_on_primary() -> None:
+    """Mining the primary pool leaves the failover sensor off."""
+    sensor = _make_sensor(
+        {"stratum": {"usingFallback": False}},
+        key="using_fallback_pool",
+    )
+    assert sensor.is_on is False
+
+
+def test_using_fallback_pool_legacy_flat_field() -> None:
+    """Older firmware exposes the failover state as a flat field."""
+    sensor = _make_sensor(
+        {"isUsingFallbackStratum": True},
+        key="using_fallback_pool",
+    )
+    assert sensor.is_on is True
+
+
+def test_using_fallback_pool_without_data() -> None:
+    """No coordinator data means off rather than an error."""
+    assert _make_sensor(None, key="using_fallback_pool").is_on is False
 
 
 async def test_binary_sensor_state_connected(

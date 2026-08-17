@@ -51,10 +51,19 @@ The NerdQAxe+ firmware already exposes a complete REST API (no firmware modifica
   "coreVoltageActual": 1138,
   "stratum": {
     "poolMode": 0,
+    "activePoolMode": 0,
+    "usingFallback": false,
     "pools": [
-      { "connected": true, "poolDifficulty": 10000 }
+      { "active": true, "connected": true, "poolDifficulty": 10000 },
+      { "active": false, "connected": false }
     ]
   },
+  "stratumURL": "public-pool.io",
+  "stratumPort": 21496,
+  "stratumUser": "bc1q....worker",
+  "fallbackStratumURL": "solo.ckpool.org",
+  "fallbackStratumPort": 3333,
+  "fallbackStratumUser": "bc1q....worker",
   "deviceModel": "NerdQAxePlus",
   "hostname": "nerdqaxe-123",
   "version": "2.0.3"
@@ -70,7 +79,8 @@ custom_components/nerdqaxe/
 ├── const.py             # Constants
 ├── config_flow.py       # UI configuration
 ├── sensor.py            # Sensors (hashrate, temp, power, etc.)
-├── binary_sensor.py     # Binary sensors (stratum connected)
+├── binary_sensor.py     # Binary sensors (stratum connected, failover)
+├── pool.py              # Active mining pool resolution
 ├── button.py            # Restart button
 ├── number.py            # Number controls (frequency, voltage)
 └── update.py            # Firmware update entity
@@ -111,6 +121,21 @@ The integration automatically creates the following sensors:
 - `sensor.nerdqaxe_found_blocks` - Blocks found (current session)
 - `sensor.nerdqaxe_total_found_blocks` - Total blocks found
 - `binary_sensor.nerdqaxe_stratum_connected` - Pool connection status
+
+### Mining Pool
+- `sensor.nerdqaxe_pool_url` - URL of the pool currently being mined
+- `sensor.nerdqaxe_pool_port` - Port of that pool
+- `sensor.nerdqaxe_pool_user` - Worker/payout address (disabled by default)
+- `binary_sensor.nerdqaxe_using_fallback_pool` - Fallback pool in use
+
+The pool sensors follow failover: when the miner switches to its fallback pool,
+they report the fallback endpoint. `sensor.nerdqaxe_pool_url` carries a
+`pool_mode` attribute (`failover` or `dual`); in dual-pool mode both pools mine
+at once, so the state reports the primary pool and the second one is exposed as
+the `secondary_url` / `secondary_port` attributes.
+
+`sensor.nerdqaxe_pool_user` embeds the payout address, so it is created disabled
+and must be enabled manually to keep it out of the recorder and backups.
 
 ### Information
 - `sensor.nerdqaxe_device_model` - Device model
@@ -459,7 +484,13 @@ Defines all sensors:
 - State classes for long-term statistics
 
 #### `binary_sensor.py`
-Binary sensor for Stratum pool connection status.
+Binary sensors for the Stratum pool connection status and the failover state.
+
+#### `pool.py`
+Resolves which mining pool is actually in use: the firmware reports pool
+endpoints as flat fields (`stratumURL`, `fallbackStratumURL`, ...) while the
+nested `stratum.pools[]` array carries the runtime state without any address,
+so the two must be crossed. Shared by the sensor and binary sensor platforms.
 
 #### `button.py`
 Defines the restart button:
