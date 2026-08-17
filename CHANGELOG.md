@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-08-17
+
+### Added
+- Mining pool sensors: `Pool URL` and `Pool Port` report the endpoint of the
+  pool currently being mined, and a `Using Fallback Pool` binary sensor tracks
+  failover. The sensors follow the miner across a failover, since the firmware
+  reports pool endpoints as flat fields while `stratum.pools[]` carries the
+  runtime state without any address (#31, requested by @Nick-AU-GH)
+- `Pool User` sensor exposing the worker/payout address. It embeds a payout
+  address, so it is created **disabled** and must be enabled manually (#31)
+- `pool_mode` attribute on `Pool URL` (`failover` or `dual`). In dual-pool mode
+  both pools mine at once, so the state reports the primary pool and the second
+  is exposed as the `secondary_url` / `secondary_port` attributes (#31)
+
+### Changed
+- The integration now targets **Python 3.14**, which Home Assistant 2026.8 and
+  later require. CI, Ruff and Mypy were still pinned to 3.13, so type checking
+  ran against an older Home Assistant than the one users actually run
+
+### Fixed
+- Diagnostics downloads leaked the fallback pool's address and payout address:
+  `fallbackStratumURL` and `fallbackStratumUser` were not redacted, unlike
+  their primary-pool counterparts
+
 ## [2.4.1] - 2026-08-09
 
 ### Changed
