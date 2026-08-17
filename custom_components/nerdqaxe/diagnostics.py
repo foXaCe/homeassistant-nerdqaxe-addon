@@ -19,6 +19,11 @@ TO_REDACT = {
     "stratumUser",
     "stratumPassword",
     "stratumURL",
+    # The fallback pool carries the same payout address and endpoint as the
+    # primary one and must be redacted just the same.
+    "fallbackStratumUser",
+    "fallbackStratumPassword",
+    "fallbackStratumURL",
 }
 
 
