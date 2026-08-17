@@ -4,7 +4,7 @@ version = "2.1.0"
 description = "Home Assistant integration for NerdQAxe+ Miner"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 authors = [
     {name = "foXaCe"}
 ]
@@ -13,7 +13,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     "aiohttp>=3.8.0",
@@ -38,7 +38,7 @@ Repository = "https://github.com/foXaCe/homeassistant-nerdqaxe-addon"
 Issues = "https://github.com/foXaCe/homeassistant-nerdqaxe-addon/issues"
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py314"
 line-length = 88
 
 [tool.ruff.lint]
@@ -77,7 +77,7 @@ force-sort-within-sections = true
 combine-as-imports = true
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 show_error_codes = true
 strict = true
 ignore_missing_imports = true
