@@ -147,7 +147,7 @@ and must be enabled manually to keep it out of the recorder and backups.
 ### Control and Updates
 - `button.nerdqaxe_restart` - Button to restart the miner
 - `number.nerdqaxe_asic_frequency` - ASIC frequency control (1-1000 MHz)
-- `number.nerdqaxe_core_voltage` - Core voltage control (1000-1350 mV)
+- `number.nerdqaxe_core_voltage` - Core voltage control (900-1350 mV)
 - `update.nerdqaxe_firmware_update` - Firmware update entity (automatically checks for new versions on GitHub)
 
 ## Installation

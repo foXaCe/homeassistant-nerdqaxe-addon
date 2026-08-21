@@ -150,7 +150,7 @@ class NerdQAxeCoreVoltageNumber(
 
     _attr_icon = "mdi:flash"
     _attr_mode = NumberMode.BOX
-    _attr_native_min_value = 1000
+    _attr_native_min_value = 900
     _attr_native_max_value = 1350
     _attr_native_step = 5
     _attr_native_unit_of_measurement = "mV"
@@ -185,7 +185,7 @@ class NerdQAxeCoreVoltageNumber(
         """Set new core voltage value.
 
         Args:
-            value: New voltage in mV (1000-1350, step 5)
+            value: New voltage in mV (900-1350, step 5)
 
         Raises:
             NerdQAxeApiError: If the API command fails
