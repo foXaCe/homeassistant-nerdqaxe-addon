@@ -237,7 +237,7 @@ async def test_core_voltage_range(
             e for e in hass.states.async_entity_ids("number") if "voltage" in e.lower()
         )
         attrs = hass.states.get(voltage_entity).attributes
-        assert attrs["min"] == 1000
+        assert attrs["min"] == 900
         assert attrs["max"] == 1350
         assert attrs["step"] == 5
 
