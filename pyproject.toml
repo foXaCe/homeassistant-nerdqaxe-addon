@@ -1,6 +1,6 @@
 [project]
 name = "homeassistant-nerdqaxe"
-version = "2.5.1"
+version = "2.6.0"
 description = "Home Assistant integration for NerdQAxe+ Miner"
 readme = "README.md"
 license = {text = "MIT"}

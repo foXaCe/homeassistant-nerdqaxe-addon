@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-08-21
+
+### Changed
+- The floor of the `Core Voltage` number entity is lowered from 1000 mV to
+  900 mV, so BM1373-based miners such as the Nexus S1 can be tuned from Home
+  Assistant (#33, requested by @jorritdb)
+
 ## [2.5.1] - 2026-08-17
 
 ### Fixed
