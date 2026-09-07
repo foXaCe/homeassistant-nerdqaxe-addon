@@ -523,14 +523,16 @@ ATTR_NEW_FIELD = "newField"
 
 2. In `sensor.py`, add a `NerdQAxeSensorEntityDescription` to the `SENSORS` tuple:
 ```python
-NerdQAxeSensorEntityDescription(
-    key="new_sensor",
-    icon="mdi:icon-name",
-    native_unit_of_measurement="unit",
-    device_class=SensorDeviceClass.XXX,
-    state_class=SensorStateClass.MEASUREMENT,
-    value_fn=lambda data: data.get(ATTR_NEW_FIELD),
-),
+(
+    NerdQAxeSensorEntityDescription(
+        key="new_sensor",
+        icon="mdi:icon-name",
+        native_unit_of_measurement="unit",
+        device_class=SensorDeviceClass.XXX,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda data: data.get(ATTR_NEW_FIELD),
+    ),
+)
 ```
 
 3. Add the entity name under `entity.sensor.new_sensor.name` in
