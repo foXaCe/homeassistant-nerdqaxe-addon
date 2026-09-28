@@ -211,7 +211,8 @@ async def test_migrate_entry_v1_to_v2_rekeys_unique_ids(
 
     # Device re-keyed to the MAC
     assert (
-        dev_reg.async_get_device_by_identifier((DOMAIN, mac), entry.entry_id) is not None
+        dev_reg.async_get_device_by_identifier((DOMAIN, mac), entry.entry_id)
+        is not None
     )
     assert (
         dev_reg.async_get_device_by_identifier((DOMAIN, MOCK_HOST), entry.entry_id)
