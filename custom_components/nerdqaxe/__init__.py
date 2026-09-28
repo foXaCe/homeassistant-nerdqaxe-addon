@@ -188,7 +188,9 @@ async def _async_migrate_v1_to_v2(hass: HomeAssistant, entry: ConfigEntry) -> No
 
         # Re-key the device from (DOMAIN, host) to (DOMAIN, mac).
         device_registry = dr.async_get(hass)
-        device = device_registry.async_get_device(identifiers={(DOMAIN, host)})
+        device = device_registry.async_get_device_by_identifier(
+            (DOMAIN, host), entry.entry_id
+        )
         if device is not None:
             device_registry.async_update_device(
                 device.id, new_identifiers={(DOMAIN, mac)}
