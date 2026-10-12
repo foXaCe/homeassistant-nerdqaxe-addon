@@ -16,7 +16,11 @@ from homeassistant.config_entries import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
-import voluptuous as vol
+
+try:
+    import probatio as vol
+except ImportError:  # Home Assistant < 2026.10 still ships voluptuous
+    import voluptuous as vol  # type: ignore[no-redef]
 
 from .const import (
     API_SYSTEM_INFO,

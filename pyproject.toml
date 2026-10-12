@@ -82,6 +82,12 @@ show_error_codes = true
 strict = true
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+# Home Assistant re-exports names such as ButtonDeviceClass from submodules
+# without an explicit "as" alias; accept them as core itself does.
+module = "homeassistant.*"
+implicit_reexport = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
