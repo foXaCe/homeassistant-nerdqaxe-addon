@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-11-09
+
+### Fixed
+- The `Voltage` and `Current` sensors labelled the firmware's millivolt and
+  milliamp readings as volts and amps, so a 12 V supply showed as 12000 V.
+  They now declare mV / mA as native units and suggest V / A for display, so
+  Home Assistant converts the values. Existing entities keep V / A and
+  their long-term statistics stay in the same unit; values recorded before
+  this release remain 1000 times too high (#52)
+
 ## [2.6.0] - 2026-08-21
 
 ### Changed
