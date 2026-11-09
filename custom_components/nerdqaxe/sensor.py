@@ -191,7 +191,9 @@ SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
     ),
     NerdQAxeSensorEntityDescription(
         key="voltage",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        # The firmware reports the input voltage in millivolts.
+        native_unit_of_measurement=UnitOfElectricPotential.MILLIVOLT,
+        suggested_unit_of_measurement=UnitOfElectricPotential.VOLT,
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,
@@ -199,7 +201,9 @@ SENSORS: tuple[NerdQAxeSensorEntityDescription, ...] = (
     ),
     NerdQAxeSensorEntityDescription(
         key="current",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        # The firmware reports ``current`` in milliamps (``currentA`` is amps).
+        native_unit_of_measurement=UnitOfElectricCurrent.MILLIAMPERE,
+        suggested_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         device_class=SensorDeviceClass.CURRENT,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=2,

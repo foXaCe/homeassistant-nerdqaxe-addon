@@ -489,3 +489,40 @@ async def test_pool_url_exposes_second_pool_in_dual_mode(
     assert state.attributes["pool_mode"] == "dual"
     assert state.attributes["secondary_url"] == "solo.ckpool.org"
     assert state.attributes["secondary_port"] == 3333
+
+
+async def test_input_voltage_and_current_converted_from_milli_units(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """The firmware reports mV / mA; HA displays them in V / A (#52)."""
+    data = {
+        **MOCK_SYSTEM_INFO,
+        **MOCK_ASIC_DATA,
+        "voltage": 12000,
+        "current": 7031.25,
+        "power": 84.25,
+    }
+    mock_session = create_mock_session(status=200, json_data=data)
+    with patch(
+        "custom_components.nerdqaxe.coordinator.async_get_clientsession",
+        return_value=mock_session,
+    ):
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    ent_reg = er.async_get(hass)
+    entries = er.async_entries_for_config_entry(ent_reg, mock_config_entry.entry_id)
+    voltage = next(
+        e
+        for e in entries
+        if e.unique_id.endswith("_voltage") and "core" not in e.unique_id
+    )
+    current = next(e for e in entries if e.unique_id.endswith("_current"))
+
+    v_state = hass.states.get(voltage.entity_id)
+    a_state = hass.states.get(current.entity_id)
+    assert v_state.attributes["unit_of_measurement"] == "V"
+    assert float(v_state.state) == pytest.approx(12.0)
+    assert a_state.attributes["unit_of_measurement"] == "A"
+    assert float(a_state.state) == pytest.approx(7.03125)

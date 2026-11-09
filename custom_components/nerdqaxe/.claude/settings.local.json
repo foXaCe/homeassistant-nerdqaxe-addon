@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/Media/Codage/GitHub/homeassistant-nerdqaxe-addon/**)",
+      "Bash(identify:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
